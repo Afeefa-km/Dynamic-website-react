@@ -61,6 +61,11 @@ export interface ProductImage {
   displayOrder: number
 }
 
+export interface ProductVariant {
+  size: ProductSize
+  stockQuantity: number
+}
+
 export interface Product {
   id: string
   storeId: string
@@ -71,7 +76,7 @@ export interface Product {
   price: number
   discountPrice: number | null
   sku: string
-  size: ProductSize
+  variants: ProductVariant[]
   stockQuantity: number
   status: ProductStatus
   images: ProductImage[]
@@ -85,8 +90,7 @@ export interface ProductInput {
   categoryId: string
   price: number
   discountPrice?: number | null
-  size: ProductSize
-  stockQuantity: number
+  variants: ProductVariant[]
   status: ProductStatus
 }
 
@@ -112,7 +116,7 @@ export interface StorefrontProduct {
   price: number
   discountPrice: number | null
   sku: string
-  size: ProductSize
+  variants: ProductVariant[]
   inStock: boolean
   stockQuantity: number
   images: string[]
@@ -123,6 +127,7 @@ export interface OrderItem {
   productId: string | null
   productName: string
   sku: string
+  size: ProductSize
   unitPrice: number
   quantity: number
   lineTotal: number
@@ -148,5 +153,5 @@ export interface PlaceOrderInput {
   customerPhone: string
   shippingAddress: string
   notes?: string
-  items: { productId: string; quantity: number }[]
+  items: { productId: string; size: ProductSize; quantity: number }[]
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { labelOf, sizeOptions } from '../constants/enums'
 import { formatMoney, mediaUrl } from '../lib/format'
 import { useCart } from './CartContext'
 import { useStorefront } from './StorefrontLayout'
@@ -31,7 +32,7 @@ export default function CartPage() {
       <div className="mt-8 grid gap-12 lg:grid-cols-[1fr_380px]">
         <ul className="border-t border-neutral-200">
           {items.map((i) => (
-            <li key={i.productId} className="flex gap-5 border-b border-neutral-200 py-6">
+            <li key={i.key} className="flex gap-5 border-b border-neutral-200 py-6">
               <Link to={`${base}/p/${i.productId}`} className="aspect-[3/4] w-24 shrink-0 bg-neutral-100 sm:w-28">
                 {i.image && <img src={mediaUrl(i.image)} alt="" className="h-full w-full object-cover" />}
               </Link>
@@ -40,10 +41,13 @@ export default function CartPage() {
                   <Link to={`${base}/p/${i.productId}`} className="text-[15px] tracking-wide hover:underline">{i.name}</Link>
                   <p className="text-[15px] whitespace-nowrap">{formatMoney(i.unitPrice * i.quantity, store.currency)}</p>
                 </div>
-                <p className="mt-1 text-sm text-neutral-500">{formatMoney(i.unitPrice, store.currency)} each</p>
+                <p className="mt-1 text-sm text-neutral-500">
+                  {i.size !== 'None' && <>Size {labelOf(sizeOptions, i.size)} · </>}
+                  {formatMoney(i.unitPrice, store.currency)} each
+                </p>
                 <div className="mt-auto flex items-center justify-between pt-4">
-                  <QuantityStepper value={i.quantity} max={i.maxQuantity} onChange={(q) => setQuantity(i.productId, q)} />
-                  <button onClick={() => remove(i.productId)} className="text-sm text-neutral-500 underline underline-offset-4 hover:text-neutral-900">
+                  <QuantityStepper value={i.quantity} max={i.maxQuantity} onChange={(q) => setQuantity(i.key, q)} />
+                  <button onClick={() => remove(i.key)} className="text-sm text-neutral-500 underline underline-offset-4 hover:text-neutral-900">
                     Remove
                   </button>
                 </div>

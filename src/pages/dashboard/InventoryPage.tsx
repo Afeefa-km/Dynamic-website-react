@@ -124,7 +124,6 @@ export default function InventoryPage() {
                           <p className="truncate font-medium">{p.name}</p>
                           <p className="text-xs text-gray-500">
                             {p.sku}
-                            {p.size !== 'None' && ` · ${labelOf(sizeOptions, p.size)}`}
                           </p>
                         </div>
                       </div>
@@ -140,7 +139,21 @@ export default function InventoryPage() {
                         <span className="font-medium">{formatMoney(p.price, store.currency)}</span>
                       )}
                     </td>
-                    <td className="px-5 py-3">{p.stockQuantity}</td>
+                    <td className="px-5 py-3">
+                      <p className="font-medium">{p.stockQuantity}</p>
+                      {p.variants.some((v) => v.size !== 'None') && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {p.variants.map((v) => (
+                            <span
+                              key={v.size}
+                              className={`rounded-full px-2 py-0.5 text-[11px] ${v.stockQuantity === 0 ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600'}`}
+                            >
+                              {labelOf(sizeOptions, v.size)}: {v.stockQuantity}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-5 py-3">
                       <Badge tone={statusTone[p.status]}>{labelOf(productStatusOptions, p.status)}</Badge>
                     </td>

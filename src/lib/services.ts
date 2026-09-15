@@ -47,7 +47,7 @@ export const productApi = {
 }
 
 export const orderApi = {
-  list: (params: { status?: string; page?: number; pageSize?: number }) => get<Paged<Order>>('/orders', { params }),
+  list: (params: { status?: string; search?: string; days?: number; page?: number; pageSize?: number }) => get<Paged<Order>>('/orders', { params }),
   updateStatus: (id: string, status: OrderStatus) => patch<Order>(`/orders/${id}/status`, { status }),
 }
 

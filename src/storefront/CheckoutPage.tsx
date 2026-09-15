@@ -5,6 +5,7 @@ import { forwardRef, useState, type InputHTMLAttributes, type ReactNode, type Te
 import { useForm } from 'react-hook-form'
 import { Link, Navigate } from 'react-router-dom'
 import { z } from 'zod'
+import { labelOf, sizeOptions } from '../constants/enums'
 import { formatMoney } from '../lib/format'
 import { storefrontApi } from '../lib/services'
 import { emailField, phoneField } from '../lib/validation'
@@ -53,7 +54,7 @@ export default function CheckoutPage() {
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
-      storefrontApi.placeOrder(store.slug, { ...values, items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })) }),
+      storefrontApi.placeOrder(store.slug, { ...values, items: items.map((i) => ({ productId: i.productId, size: i.size, quantity: i.quantity })) }),
     onSuccess: (order) => {
       setPlaced(order)
       clear()
@@ -109,8 +110,8 @@ export default function CheckoutPage() {
         <OrderSummary subtotal={subtotal} currency={store.currency}>
           <ul className="mb-5 space-y-2 border-b border-neutral-200 pb-5 text-sm text-neutral-600">
             {items.map((i) => (
-              <li key={i.productId} className="flex justify-between gap-3">
-                <span className="truncate">{i.quantity} × {i.name}</span>
+              <li key={i.key} className="flex justify-between gap-3">
+                <span className="truncate">{i.quantity} × {i.name}{i.size !== 'None' && ` (${labelOf(sizeOptions, i.size)})`}</span>
                 <span className="whitespace-nowrap">{formatMoney(i.quantity * i.unitPrice, store.currency)}</span>
               </li>
             ))}

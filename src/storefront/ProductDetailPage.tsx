@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { Heart } from 'lucide-react'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { labelOf, sizeOptions } from '../constants/enums'
+import { labelOf, sizeOptions, type ProductSize } from '../constants/enums'
 import { formatMoney, mediaUrl } from '../lib/format'
 import { storefrontApi } from '../lib/services'
 import { useCart } from './CartContext'
@@ -17,6 +18,7 @@ export default function ProductDetailPage() {
   const { has, toggle } = useWishlist()
   const navigate = useNavigate()
   const [qty, setQty] = useState(1)
+  const [size, setSize] = useState<ProductSize | null>(null)
   const base = `/store/${store.slug}`
 
   const query = useQuery({
@@ -40,6 +42,18 @@ export default function ProductDetailPage() {
   const onSale = !!p.discountPrice && p.discountPrice < p.price
   const saved = has(p.id)
   const images = p.images.length ? p.images : ['']
+  const hasSizes = p.variants.some((v) => v.size !== 'None')
+  // Products without sizes have a single "None" variant that is selected implicitly
+  const variant = hasSizes ? p.variants.find((v) => v.size === size) : p.variants[0]
+  const stock = variant?.stockQuantity ?? 0
+  const addToBag = () => {
+    if (!variant) {
+      toast.error('Please select a size')
+      return false
+    }
+    add(p, variant.size, qty)
+    return true
+  }
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 sm:px-12">
@@ -82,13 +96,29 @@ export default function ProductDetailPage() {
 
           <hr className="my-6 border-neutral-200" />
 
-          {p.size !== 'None' && (
+          {hasSizes && (
             <div className="mb-6">
               <p className="text-sm tracking-[0.06em] uppercase">Size</p>
-              <div className="mt-4 flex gap-2">
-                <span className="flex h-11 min-w-14 items-center justify-center border border-neutral-900 px-3 text-sm">
-                  {labelOf(sizeOptions, p.size)}
-                </span>
+              <div className="mt-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Size">
+                {p.variants.map((v) => {
+                  const soldOut = v.stockQuantity <= 0
+                  const selected = size === v.size
+                  return (
+                    <button
+                      key={v.size}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={soldOut}
+                      onClick={() => { setSize(v.size); setQty(1) }}
+                      className={`flex h-11 min-w-14 items-center justify-center border px-3 text-sm transition ${
+                        selected ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-300 hover:border-neutral-900'
+                      } ${soldOut ? 'cursor-not-allowed text-neutral-300 line-through hover:border-neutral-300' : ''}`}
+                    >
+                      {labelOf(sizeOptions, v.size)}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -97,8 +127,8 @@ export default function ProductDetailPage() {
           <div className="mt-4 flex items-center gap-4">
             {p.inStock ? (
               <>
-                <QuantityStepper value={qty} max={p.stockQuantity} onChange={setQty} />
-                {p.stockQuantity <= 5 && <span className="text-sm text-red-700">Only {p.stockQuantity} left</span>}
+                <QuantityStepper value={qty} max={variant ? stock : 1} onChange={setQty} />
+                {variant && stock <= 5 && <span className="text-sm text-red-700">Only {stock} left</span>}
               </>
             ) : (
               <span className="text-sm text-red-700">Out of stock</span>
@@ -108,11 +138,11 @@ export default function ProductDetailPage() {
           <hr className="my-6 border-neutral-200" />
 
           <div className="space-y-3">
-            <StoreButton className="w-full text-base" disabled={!p.inStock} onClick={() => add(p, qty)}>
+            <StoreButton className="w-full text-base" disabled={!p.inStock} onClick={addToBag}>
               {p.inStock ? 'Add to bag' : 'Sold out'}
             </StoreButton>
             {p.inStock && (
-              <StoreButton variant="outline" className="w-full" onClick={() => { add(p, qty); navigate(`${base}/cart`) }}>
+              <StoreButton variant="outline" className="w-full" onClick={() => { if (addToBag()) navigate(`${base}/cart`) }}>
                 Buy now
               </StoreButton>
             )}

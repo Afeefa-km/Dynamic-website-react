@@ -1,10 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { effectivePrice } from '../lib/format'
+import type { ProductSize } from '../constants/enums'
 import type { StorefrontProduct } from '../types/api'
 
 export interface CartItem {
+  key: string
   productId: string
+  size: ProductSize
   name: string
   image?: string
   unitPrice: number
@@ -16,9 +19,9 @@ interface CartState {
   items: CartItem[]
   count: number
   subtotal: number
-  add: (product: StorefrontProduct, quantity?: number) => void
-  setQuantity: (productId: string, quantity: number) => void
-  remove: (productId: string) => void
+  add: (product: StorefrontProduct, size: ProductSize, quantity?: number) => void
+  setQuantity: (key: string, quantity: number) => void
+  remove: (key: string) => void
   clear: () => void
 }
 
@@ -26,7 +29,8 @@ const CartContext = createContext<CartState | null>(null)
 
 const read = (key: string): CartItem[] => {
   try {
-    return JSON.parse(localStorage.getItem(key) ?? '[]') as CartItem[]
+    // Drop items saved before sizes were tracked per cart line
+    return (JSON.parse(localStorage.getItem(key) ?? '[]') as CartItem[]).filter((i) => i.key && i.size)
   } catch {
     return []
   }
@@ -40,29 +44,33 @@ export function CartProvider({ slug, children }: { slug: string; children: React
   useEffect(() => setItems(read(storageKey)), [storageKey])
   useEffect(() => localStorage.setItem(storageKey, JSON.stringify(items)), [storageKey, items])
 
-  const add = useCallback((product: StorefrontProduct, quantity = 1) => {
-    if (!product.inStock) return
+  const add = useCallback((product: StorefrontProduct, size: ProductSize, quantity = 1) => {
+    const stock = product.variants.find((v) => v.size === size)?.stockQuantity ?? 0
+    if (stock <= 0) return
+    const key = `${product.id}:${size}`
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === product.id)
-      const nextQty = Math.min((existing?.quantity ?? 0) + quantity, product.stockQuantity)
+      const existing = prev.find((i) => i.key === key)
+      const nextQty = Math.min((existing?.quantity ?? 0) + quantity, stock)
       const item: CartItem = {
+        key,
         productId: product.id,
+        size,
         name: product.name,
         image: product.images[0],
         unitPrice: effectivePrice(product),
         quantity: nextQty,
-        maxQuantity: product.stockQuantity,
+        maxQuantity: stock,
       }
-      return existing ? prev.map((i) => (i.productId === product.id ? item : i)) : [...prev, item]
+      return existing ? prev.map((i) => (i.key === key ? item : i)) : [...prev, item]
     })
     toast.success(`${product.name} added to bag`)
   }, [])
 
-  const setQuantity = useCallback((productId: string, quantity: number) => {
-    setItems((prev) => prev.map((i) => (i.productId === productId ? { ...i, quantity: Math.max(1, Math.min(quantity, i.maxQuantity)) } : i)))
+  const setQuantity = useCallback((key: string, quantity: number) => {
+    setItems((prev) => prev.map((i) => (i.key === key ? { ...i, quantity: Math.max(1, Math.min(quantity, i.maxQuantity)) } : i)))
   }, [])
 
-  const remove = useCallback((productId: string) => setItems((prev) => prev.filter((i) => i.productId !== productId)), [])
+  const remove = useCallback((key: string) => setItems((prev) => prev.filter((i) => i.key !== key)), [])
   const clear = useCallback(() => setItems([]), [])
 
   const value = useMemo(

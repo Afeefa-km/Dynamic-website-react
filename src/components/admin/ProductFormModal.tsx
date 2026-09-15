@@ -1,8 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useFieldArray, useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { z } from 'zod'
 import { PRODUCT_SIZES, PRODUCT_STATUSES, productStatusOptions, sizeOptions } from '../../constants/enums'
@@ -28,11 +28,27 @@ const schema = z
     discountMode: z.enum(['amount', 'percent']),
     // Either the sale price (amount mode) or the % off (percent mode)
     discountValue: z.number().positive('Must be greater than 0').optional(),
-    size: z.enum(PRODUCT_SIZES),
-    stockQuantity: z.number({ message: 'Stock is required' }).int('Whole numbers only').min(0).max(100_000),
+    variants: z
+      .array(
+        z.object({
+          size: z.enum(PRODUCT_SIZES),
+          stockQuantity: z.number({ message: 'Stock is required' }).int('Whole numbers only').min(0, 'Min 0').max(100_000),
+        }),
+      )
+      .min(1, 'Add at least one size'),
     status: z.enum(PRODUCT_STATUSES),
   })
   .superRefine((v, ctx) => {
+    const seen = new Set<string>()
+    v.variants.forEach((variant, index) => {
+      if (seen.has(variant.size)) {
+        ctx.addIssue({ code: 'custom', path: ['variants', index, 'size'], message: 'Size already added' })
+      }
+      if (variant.size === 'None' && v.variants.length > 1) {
+        ctx.addIssue({ code: 'custom', path: ['variants', index, 'size'], message: 'Choose a size' })
+      }
+      seen.add(variant.size)
+    })
     if (v.discountValue === undefined) return
     if (v.discountMode === 'percent' && v.discountValue >= 100) {
       ctx.addIssue({ code: 'custom', path: ['discountValue'], message: 'Percentage must be less than 100' })
@@ -72,7 +88,7 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
 
   const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: categoryApi.list })
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
+  const { register, handleSubmit, watch, setValue, control, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: product
       ? {
@@ -82,14 +98,26 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
           price: product.price,
           discountMode: 'amount',
           discountValue: product.discountPrice ?? undefined,
-          size: product.size,
-          stockQuantity: product.stockQuantity,
+          variants: product.variants.length ? product.variants : [{ size: 'None', stockQuantity: 0 }],
           status: product.status,
         }
-      : { categoryId: '', discountMode: 'amount', size: 'None', status: 'Active', stockQuantity: 1 },
+      : { categoryId: '', discountMode: 'amount', status: 'Active', variants: [{ size: 'None', stockQuantity: 1 }] },
   })
 
-  const [price, discountMode, discountValue] = watch(['price', 'discountMode', 'discountValue'])
+  const [price, discountMode, discountValue, variants] = watch(['price', 'discountMode', 'discountValue', 'variants'])
+  const variantFields = useFieldArray({ control, name: 'variants' })
+  const totalStock = (variants ?? []).reduce((n, v) => n + (Number.isNaN(v.stockQuantity) ? 0 : v.stockQuantity || 0), 0)
+
+  const addSize = () => {
+    const used = new Set((variants ?? []).map((v) => v.size))
+    const next = PRODUCT_SIZES.find((s) => s !== 'None' && !used.has(s)) ?? 'FreeSize'
+    // The first real size replaces the "not applicable" placeholder row
+    if (variants?.length === 1 && variants[0].size === 'None') {
+      setValue('variants.0.size', next, { shouldValidate: true })
+      return
+    }
+    variantFields.append({ size: next, stockQuantity: 0 })
+  }
 
   const createCategory = useMutation({
     mutationFn: (name: string) => categoryApi.create(name),
@@ -240,9 +268,6 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
           )}
         </div>
 
-        <Field label="Size" error={errors.size?.message}>
-          <Select {...register('size')} options={sizeOptions} />
-        </Field>
         <Field label={`Price (${currency})`} required error={errors.price?.message}>
           <Input {...register('price', num)} type="number" step="0.01" min="0" aria-invalid={!!errors.price} />
         </Field>
@@ -282,12 +307,57 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
           )}
         </div>
 
-        <Field label="Stock quantity" required error={errors.stockQuantity?.message}>
-          <Input {...register('stockQuantity', num)} type="number" step="1" min="0" aria-invalid={!!errors.stockQuantity} />
-        </Field>
         <Field label="Status" required error={errors.status?.message}>
           <Select {...register('status')} options={productStatusOptions} />
         </Field>
+
+        <div className="sm:col-span-2">
+          <div className="mb-1.5 flex items-center justify-between gap-2">
+            <span className="text-sm font-medium text-gray-700">
+              Sizes &amp; stock <span className="text-red-500">*</span>
+            </span>
+            <span className="text-xs text-gray-500">Total stock: {totalStock}</span>
+          </div>
+          <div className="space-y-2 rounded-2xl border border-gray-200 p-3">
+            {variantFields.fields.map((field, index) => {
+              const err = errors.variants?.[index]
+              return (
+                <div key={field.id} className="flex items-start gap-2">
+                  <div className="flex-1">
+                    <Select {...register(`variants.${index}.size`)} options={sizeOptions} aria-label="Size" aria-invalid={!!err?.size} />
+                    {err?.size && <span className="mt-1 block text-xs text-red-600">{err.size.message}</span>}
+                  </div>
+                  <div className="w-32">
+                    <Input
+                      {...register(`variants.${index}.stockQuantity`, num)}
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="Qty"
+                      aria-label="Stock quantity"
+                      aria-invalid={!!err?.stockQuantity}
+                    />
+                    {err?.stockQuantity && <span className="mt-1 block text-xs text-red-600">{err.stockQuantity.message}</span>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => variantFields.remove(index)}
+                    disabled={variantFields.fields.length === 1}
+                    className="mt-1.5 rounded-full p-2 text-gray-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-30 disabled:hover:bg-transparent"
+                    aria-label="Remove size"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              )
+            })}
+            <button type="button" onClick={addSize} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline">
+              <Plus className="h-3.5 w-3.5" /> Add size
+            </button>
+          </div>
+          {errors.variants?.message && <span className="mt-1 block text-xs text-red-600">{errors.variants.message}</span>}
+          {errors.variants?.root?.message && <span className="mt-1 block text-xs text-red-600">{errors.variants.root.message}</span>}
+        </div>
         <Field label="Images" hint="Up to 8 images, 5MB each. The first image is the cover." className="sm:col-span-2">
           <ImagePicker
             images={images}

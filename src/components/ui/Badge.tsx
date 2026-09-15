@@ -5,6 +5,7 @@ const tones = {
   yellow: 'bg-amber-50 text-amber-700',
   red: 'bg-red-50 text-red-700',
   blue: 'bg-sky-50 text-sky-700',
+  indigo: 'bg-indigo-50 text-indigo-700',
 }
 
 export type BadgeTone = keyof typeof tones
