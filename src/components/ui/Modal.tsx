@@ -8,8 +8,10 @@ interface Props {
   onClose?: () => void
   children: ReactNode
   footer?: ReactNode
-  size?: 'md' | 'lg'
+  size?: 'md' | 'lg' | 'xl'
 }
+
+const widths = { md: 'sm:max-w-lg', lg: 'sm:max-w-3xl', xl: 'sm:max-w-5xl' }
 
 /** Omit onClose to make the modal mandatory (no close button, no escape). */
 export function Modal({ open, title, subtitle, onClose, children, footer, size = 'md' }: Props) {
@@ -28,7 +30,7 @@ export function Modal({ open, title, subtitle, onClose, children, footer, size =
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
-      <div className={`flex max-h-[95vh] w-full flex-col rounded-t-3xl bg-white shadow-xl sm:rounded-3xl ${size === 'lg' ? 'sm:max-w-3xl' : 'sm:max-w-lg'}`}>
+      <div className={`flex max-h-[95vh] w-full flex-col rounded-t-3xl bg-white shadow-xl sm:rounded-3xl ${widths[size]}`}>
         <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
           <div>
             <h2 className="text-lg font-bold text-gray-900">{title}</h2>

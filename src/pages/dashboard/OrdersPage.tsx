@@ -51,6 +51,7 @@ export default function OrdersPage() {
     mutationFn: ({ id, value }: { id: string; value: OrderStatus }) => orderApi.updateStatus(id, value),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
+      queryClient.invalidateQueries({ queryKey: ['orders-dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['products'] }) // cancelling restocks inventory
     },
   })
@@ -140,7 +141,8 @@ export default function OrdersPage() {
                             disabled={locked || updating}
                             onChange={(e) => statusMutation.mutate({ id: o.id, value: e.target.value as OrderStatus })}
                             options={orderStatusOptions}
-                            className="w-36 py-2"
+                            compact
+                            className="w-36"
                             aria-label={`Change status of ${o.orderNumber}`}
                           />
                         </td>

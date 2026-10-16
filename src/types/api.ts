@@ -1,6 +1,4 @@
-import type {
-  BusinessType, Currency, OrderStatus, ProductSize, ProductStatus,
-} from '../constants/enums'
+import type { BusinessType, Currency, OrderStatus, ProductSize, ProductStatus, StoreTheme } from '../constants/enums'
 
 export interface ApiResponse<T> {
   success: boolean
@@ -44,15 +42,31 @@ export interface Store {
   contactPhone: string
   businessAddress: string
   currency: Currency
+  theme: StoreTheme
+  /** Home page cover photos in display order (max 3); each theme uses as many as it needs */
+  coverImages: string[]
   createdAt: string
 }
 
-export type StoreInput = Omit<Store, 'id' | 'slug' | 'createdAt'>
+export type StoreInput = Omit<Store, 'id' | 'slug' | 'createdAt' | 'theme' | 'coverImages'>
 
 export interface Category {
   id: string
   name: string
+  /** null for a top-level category */
+  parentId: string | null
+  depth: number
+  /** Full label from the top level down, e.g. "Women › Kurtas" */
+  path: string
+  /** Items directly in this category */
   productCount: number
+  /** Items in this category and everything nested under it */
+  totalProductCount: number
+}
+
+export interface CategoryPathItem {
+  id: string
+  name: string
 }
 
 export interface ProductImage {
@@ -71,10 +85,15 @@ export interface Product {
   storeId: string
   name: string
   description: string
+  /** Long-form product information shown on the product page */
+  details: string
   categoryId: string
   categoryName: string
+  /** Top-level category first, the product's own category last */
+  categoryPath: CategoryPathItem[]
   price: number
   discountPrice: number | null
+  costPrice: number
   sku: string
   variants: ProductVariant[]
   stockQuantity: number
@@ -87,9 +106,11 @@ export interface Product {
 export interface ProductInput {
   name: string
   description?: string
+  details?: string
   categoryId: string
   price: number
   discountPrice?: number | null
+  costPrice: number
   variants: ProductVariant[]
   status: ProductStatus
 }
@@ -104,15 +125,28 @@ export interface Storefront {
   contactPhone: string
   businessAddress: string
   currency: Currency
-  categories: { id: string; name: string }[]
+  theme: StoreTheme
+  coverImages: string[]
+  /** In tree order; only categories with something to buy */
+  categories: StorefrontCategory[]
+}
+
+export interface StorefrontCategory {
+  id: string
+  name: string
+  parentId: string | null
 }
 
 export interface StorefrontProduct {
   id: string
   name: string
   description: string
+  /** Long-form product information shown on the product page */
+  details: string
   categoryId: string
   categoryName: string
+  /** Top-level category first, the product's own category last */
+  categoryPath: CategoryPathItem[]
   price: number
   discountPrice: number | null
   sku: string
@@ -145,6 +179,68 @@ export interface Order {
   totalAmount: number
   items: OrderItem[]
   createdAt: string
+}
+
+export interface DashboardKpis {
+  totalOrders: number
+  placedOrders: number
+  cancelledOrders: number
+  itemsSold: number
+  revenue: number
+  averageOrderValue: number
+  cost: number
+  profit: number
+  marginPercent: number
+}
+
+export interface DashboardStatusCount {
+  status: OrderStatus
+  count: number
+  revenue: number
+}
+
+export interface DashboardTopItem {
+  productName: string
+  quantity: number
+  revenue: number
+  cost: number
+  profit: number
+}
+
+export interface DashboardUnderperformer {
+  productName: string
+  quantity: number
+  revenue: number
+  profit: number
+  stockQuantity: number
+  /** Unsold stock valued at purchase price */
+  stockValue: number
+}
+
+export interface DashboardPoint {
+  periodStart: string
+  orders: number
+  placed: number
+  cancelled: number
+  revenue: number
+  profit: number
+}
+
+export interface OrderDashboard {
+  from: string
+  to: string
+  grain: 'Day' | 'Week' | 'Month'
+  current: DashboardKpis
+  previous: DashboardKpis
+  mostOrderedItem: string | null
+  mostOrderedQuantity: number
+  mostProfitableItem: DashboardTopItem | null
+  byStatus: DashboardStatusCount[]
+  topItems: DashboardTopItem[]
+  topProfitItems: DashboardTopItem[]
+  underperformers: DashboardUnderperformer[]
+  productsMissingCost: number
+  series: DashboardPoint[]
 }
 
 export interface PlaceOrderInput {

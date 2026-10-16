@@ -4,6 +4,7 @@ import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { labelOf, sizeOptions, type ProductSize } from '../constants/enums'
+import { PATH_SEPARATOR } from '../lib/categories'
 import { formatMoney, mediaUrl } from '../lib/format'
 import { storefrontApi } from '../lib/services'
 import { useCart } from './CartContext'
@@ -58,18 +59,24 @@ export default function ProductDetailPage() {
   return (
     <div className="mx-auto max-w-[1440px] px-4 sm:px-12">
       <div className="pt-8">
-        <Breadcrumb items={[{ label: 'Home', to: base }, { label: p.categoryName, to: `${base}?category=${p.categoryId}` }, { label: p.name }]} />
+        <Breadcrumb
+          items={[
+            { label: 'Home', to: base },
+            ...p.categoryPath.map((c) => ({ label: c.name, to: `${base}?category=${c.id}` })),
+            { label: p.name },
+          ]}
+        />
       </div>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_420px] xl:gap-12">
         {/* Gallery: two-up grid like a lookbook */}
         <div className={`grid gap-2 ${images.length > 1 ? 'sm:grid-cols-2' : ''}`}>
           {images.map((img, i) => (
-            <div key={i} className="aspect-[3/4] bg-neutral-100">
+            <div key={i} className="aspect-[3/4] overflow-hidden rounded-sf bg-sf-surface">
               {img ? (
                 <img src={mediaUrl(img)} alt={i === 0 ? p.name : ''} className="h-full w-full object-cover" loading={i > 1 ? 'lazy' : undefined} />
               ) : (
-                <div className="flex h-full items-center justify-center text-neutral-400">No image</div>
+                <div className="flex h-full items-center justify-center text-sf-subtle">No image</div>
               )}
             </div>
           ))}
@@ -77,9 +84,9 @@ export default function ProductDetailPage() {
 
         <div className="lg:sticky lg:top-40 lg:self-start">
           <div className="flex items-start justify-between gap-4">
-            <h1 className="text-xl tracking-wide">{p.name}</h1>
+            <h1 className="sf-heading text-2xl">{p.name}</h1>
             <button onClick={() => toggle(p)} className="p-1" aria-label={saved ? 'Remove from wishlist' : 'Add to wishlist'} aria-pressed={saved}>
-              <Heart className={`h-6 w-6 ${saved ? 'fill-neutral-900' : ''}`} strokeWidth={1.5} />
+              <Heart className={`h-6 w-6 ${saved ? 'fill-sf-text' : ''}`} strokeWidth={1.5} />
             </button>
           </div>
 
@@ -87,14 +94,14 @@ export default function ProductDetailPage() {
             <span>{formatMoney(onSale ? p.discountPrice! : p.price, store.currency)}</span>
             {onSale && (
               <>
-                <span className="text-sm text-neutral-400 line-through">{formatMoney(p.price, store.currency)}</span>
-                <span className="text-sm text-red-700">{Math.round((1 - p.discountPrice! / p.price) * 100)}% off</span>
+                <span className="text-sm text-sf-subtle line-through">{formatMoney(p.price, store.currency)}</span>
+                <span className="text-sm text-sf-sale">{Math.round((1 - p.discountPrice! / p.price) * 100)}% off</span>
               </>
             )}
-            <span className="text-xs text-neutral-400">MRP incl. of all taxes</span>
+            <span className="text-xs text-sf-subtle">MRP incl. of all taxes</span>
           </p>
 
-          <hr className="my-6 border-neutral-200" />
+          <hr className="my-6 border-sf-border" />
 
           {hasSizes && (
             <div className="mb-6">
@@ -111,9 +118,9 @@ export default function ProductDetailPage() {
                       aria-checked={selected}
                       disabled={soldOut}
                       onClick={() => { setSize(v.size); setQty(1) }}
-                      className={`flex h-11 min-w-14 items-center justify-center border px-3 text-sm transition ${
-                        selected ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-300 hover:border-neutral-900'
-                      } ${soldOut ? 'cursor-not-allowed text-neutral-300 line-through hover:border-neutral-300' : ''}`}
+                      className={`flex h-11 min-w-14 items-center justify-center rounded-sf-btn border px-3 text-sm transition ${
+                        selected ? 'border-sf-primary bg-sf-primary text-sf-on-primary' : 'border-sf-line hover:border-sf-text'
+                      } ${soldOut ? 'cursor-not-allowed text-sf-subtle line-through hover:border-sf-line' : ''}`}
                     >
                       {labelOf(sizeOptions, v.size)}
                     </button>
@@ -128,14 +135,14 @@ export default function ProductDetailPage() {
             {p.inStock ? (
               <>
                 <QuantityStepper value={qty} max={variant ? stock : 1} onChange={setQty} />
-                {variant && stock <= 5 && <span className="text-sm text-red-700">Only {stock} left</span>}
+                {variant && stock <= 5 && <span className="text-sm text-sf-sale">Only {stock} left</span>}
               </>
             ) : (
-              <span className="text-sm text-red-700">Out of stock</span>
+              <span className="text-sm text-sf-sale">Out of stock</span>
             )}
           </div>
 
-          <hr className="my-6 border-neutral-200" />
+          <hr className="my-6 border-sf-border" />
 
           <div className="space-y-3">
             <StoreButton className="w-full text-base" disabled={!p.inStock} onClick={addToBag}>
@@ -148,12 +155,13 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          <div className="mt-8 border-t border-neutral-200">
+          <div className="mt-8 border-t border-sf-border">
             <Accordion title="Product Details and Overview" defaultOpen>
               {p.description && <p className="mb-3 whitespace-pre-line">{p.description}</p>}
+              {p.details && <p className="mb-3 whitespace-pre-line">{p.details}</p>}
               <dl className="grid grid-cols-[110px_1fr] gap-y-1">
-                <dt className="text-neutral-400">Category</dt><dd>{p.categoryName}</dd>
-                <dt className="text-neutral-400">SKU</dt><dd>{p.sku}</dd>
+                <dt className="text-sf-subtle">Category</dt><dd>{p.categoryPath.map((c) => c.name).join(PATH_SEPARATOR) || p.categoryName}</dd>
+                <dt className="text-sf-subtle">SKU</dt><dd>{p.sku}</dd>
               </dl>
             </Accordion>
             <Accordion title="Delivery & Return">

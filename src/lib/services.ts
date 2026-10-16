@@ -1,8 +1,8 @@
 import type {
-  AuthResponse, Category, Order, Paged, PlaceOrderInput, Product, ProductImage, ProductInput, Store, StoreInput, Storefront,
+  AuthResponse, Category, Order, OrderDashboard, Paged, PlaceOrderInput, Product, ProductImage, ProductInput, Store, StoreInput, Storefront,
   StorefrontProduct, User,
 } from '../types/api'
-import type { OrderStatus } from '../constants/enums'
+import type { OrderStatus, StoreTheme } from '../constants/enums'
 import { del, get, patch, post, put, uploadFile } from './api'
 
 export const authApi = {
@@ -17,13 +17,17 @@ export const storeApi = {
   mine: () => get<Store>('/stores/my-store', { silentError: true }),
   create: (body: StoreInput) => post<Store>('/stores', body),
   update: (body: StoreInput) => put<Store>('/stores/my-store', body),
+  updateTheme: (theme: StoreTheme) => put<Store>('/stores/my-store/theme', { theme }),
+  uploadCover: (file: File) => uploadFile<{ url: string }>('/media/store-cover', file, { silent: true }),
+  updateCovers: (coverImages: string[]) => put<Store>('/stores/my-store/covers', { coverImages }),
   uploadLogo: (file: File) => uploadFile<{ url: string }>('/media/store-logo', file, { silent: true }),
 }
 
 export const categoryApi = {
   list: () => get<Category[]>('/categories'),
-  create: (name: string) => post<Category>('/categories', { name }),
-  update: (id: string, name: string) => put<Category>(`/categories/${id}`, { name }),
+  create: (name: string, parentId: string | null = null) => post<Category>('/categories', { name, parentId }),
+  // parentId is always sent: leaving it out would move the category to the top level
+  update: (id: string, name: string, parentId: string | null) => put<Category>(`/categories/${id}`, { name, parentId }),
   remove: (id: string) => del<boolean>(`/categories/${id}`),
 }
 
@@ -48,6 +52,7 @@ export const productApi = {
 
 export const orderApi = {
   list: (params: { status?: string; search?: string; days?: number; page?: number; pageSize?: number }) => get<Paged<Order>>('/orders', { params }),
+  dashboard: (from: string, to: string) => get<OrderDashboard>('/orders/dashboard', { params: { from, to } }),
   updateStatus: (id: string, status: OrderStatus) => patch<Order>(`/orders/${id}/status`, { status }),
 }
 

@@ -20,7 +20,7 @@ export function Button({ variant = 'primary', loading, disabled, className = '',
     <button
       {...rest}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 h-11 rounded-full px-5 text-sm font-semibold whitespace-nowrap transition-colors disabled:cursor-not-allowed ${variants[variant]} ${className}`}
     >
       {loading && <Spinner className="h-4 w-4" />}
       {children}

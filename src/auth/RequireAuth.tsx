@@ -10,10 +10,3 @@ export function RequireAuth() {
   if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname }} />
   return <Outlet />
 }
-
-export function GuestOnly() {
-  const { isAuthenticated, initializing } = useAuth()
-  if (initializing) return <PageLoader />
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />
-  return <Outlet />
-}

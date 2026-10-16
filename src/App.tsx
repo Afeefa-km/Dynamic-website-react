@@ -1,8 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { GuestOnly, RequireAuth } from './auth/RequireAuth'
+import { RequireAuth } from './auth/RequireAuth'
 import LoginPage from './pages/auth/LoginPage'
 import SignupPage from './pages/auth/SignupPage'
 import DashboardLayout from './pages/dashboard/DashboardLayout'
+import DashboardOverview from './pages/dashboard/DashboardOverview'
 import OrdersPage from './pages/dashboard/OrdersPage'
 import CategoriesPage from './pages/dashboard/CategoriesPage'
 import InventoryPage from './pages/dashboard/InventoryPage'
@@ -19,14 +20,13 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
 
-      <Route element={<GuestOnly />}>
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login" element={<LoginPage />} />
-      </Route>
+      {/* Always show the form, even with a remembered session: signing in is the way into the dashboard */}
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/login" element={<LoginPage />} />
 
       <Route element={<RequireAuth />}>
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<Navigate to="inventory" replace />} />
+          <Route index element={<DashboardOverview />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="products" element={<Navigate to="../inventory" replace />} />

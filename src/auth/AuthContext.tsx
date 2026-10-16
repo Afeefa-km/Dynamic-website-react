@@ -26,9 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [queryClient])
 
   const signIn = useCallback((response: AuthResponse) => {
+    // Signing in replaces any earlier session, so drop data cached for the previous account
+    queryClient.clear()
     localStorage.setItem(TOKEN_KEY, response.token)
     setUser(response.user)
-  }, [])
+  }, [queryClient])
 
   // Restore the session from a stored token
   useEffect(() => {

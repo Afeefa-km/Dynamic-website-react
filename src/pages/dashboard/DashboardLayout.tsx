@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import { ChevronDown, ExternalLink, LogOut, Menu, Package, PanelLeftClose, PanelLeftOpen, Settings, ShoppingCart, Tags, X } from 'lucide-react'
+import { ChevronDown, ExternalLink, LayoutDashboard, LogOut, Menu, Package, PanelLeftClose, PanelLeftOpen, Settings, ShoppingCart, Tags, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { StoreFormModal } from '../../components/admin/StoreFormModal'
+import { ThemeOnboardingModal } from '../../components/admin/ThemeOnboardingModal'
 import { Logo } from '../../components/Logo'
 import { Button } from '../../components/ui/Button'
 import { PageLoader } from '../../components/ui/Spinner'
@@ -23,6 +24,7 @@ export interface DashboardContext {
 export const useDashboard = () => useOutletContext<DashboardContext>()
 
 const navItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/dashboard/inventory', label: 'Inventory', icon: Package },
   { to: '/dashboard/categories', label: 'Categories', icon: Tags },
   { to: '/dashboard/orders', label: 'Orders', icon: ShoppingCart },
@@ -36,6 +38,8 @@ export default function DashboardLayout() {
   const queryClient = useQueryClient()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [onboarding, setOnboarding] = useState(false)
+  // First-run steps after creating the store: pick a theme (skippable), then add the first item
+  const [themeStep, setThemeStep] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem(COLLAPSE_KEY) === '1'
@@ -81,10 +85,10 @@ export default function DashboardLayout() {
           defaultEmail={user?.email}
           defaultPhone={user?.phoneNumber}
           onSaved={(store) => {
-            // Next onboarding step: add the first inventory item
-            setOnboarding(true)
+            // Next onboarding step: choose a theme, then add the first inventory item
+            setThemeStep(true)
             queryClient.setQueryData(['my-store'], store)
-            navigate('/dashboard/inventory', { replace: true })
+            navigate('/dashboard', { replace: true })
           }}
         />
       </div>
@@ -102,7 +106,8 @@ export default function DashboardLayout() {
 
   const store = storeQuery.data
 
-  const pageTitle = navItems.find((n) => location.pathname.startsWith(n.to))?.label ?? 'Dashboard'
+  const pageTitle =
+    navItems.find((n) => (n.end ? location.pathname === n.to : location.pathname.startsWith(n.to)))?.label ?? 'Dashboard'
 
   // On mobile the drawer always shows labels
   const compact = collapsed && !mobileOpen
@@ -152,8 +157,8 @@ export default function DashboardLayout() {
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3">
-          {navItems.map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} className={({ isActive }) => navClass(isActive)} title={compact ? label : undefined}>
+          {navItems.map(({ to, label, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} className={({ isActive }) => navClass(isActive)} title={compact ? label : undefined}>
               <Icon className="h-5 w-5 shrink-0" />
               <span className={compact ? 'lg:hidden' : ''}>{label}</span>
             </NavLink>
@@ -207,6 +212,19 @@ export default function DashboardLayout() {
           <Outlet context={{ store, onboarding, finishOnboarding: () => setOnboarding(false) } satisfies DashboardContext} />
         </main>
       </div>
+
+      {themeStep && (
+        <ThemeOnboardingModal
+          store={store}
+          onDone={(updated) => {
+            if (updated) queryClient.setQueryData(['my-store'], updated)
+            setThemeStep(false)
+            // The inventory page opens the add-item popup when it mounts during onboarding
+            setOnboarding(true)
+            navigate('/dashboard/inventory', { replace: true })
+          }}
+        />
+      )}
 
       {settingsOpen && (
         <StoreFormModal

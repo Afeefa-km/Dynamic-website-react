@@ -12,6 +12,47 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
+/*
+ * Storefront design tokens. Every storefront component styles itself with these, and the active
+ * theme (storefront/themes.ts) sets the --sf-* values on the storefront root. That keeps the
+ * pages and features identical across themes; only the look changes.
+ */
+@theme inline {
+  --color-sf-bg: var(--sf-bg);
+  --color-sf-surface: var(--sf-surface);
+  --color-sf-text: var(--sf-text);
+  --color-sf-muted: var(--sf-muted);
+  --color-sf-subtle: var(--sf-subtle);
+  --color-sf-border: var(--sf-border);
+  --color-sf-line: var(--sf-line);
+  --color-sf-primary: var(--sf-primary);
+  --color-sf-on-primary: var(--sf-on-primary);
+  --color-sf-accent: var(--sf-accent);
+  --color-sf-on-accent: var(--sf-on-accent);
+  --color-sf-band: var(--sf-band);
+  --color-sf-on-band: var(--sf-on-band);
+  --color-sf-sale: var(--sf-sale);
+  --font-sf-display: var(--sf-font-display);
+  --font-sf-body: var(--sf-font-body);
+  --font-sf-label: var(--sf-font-label);
+  --radius-sf: var(--sf-radius);
+  --radius-sf-btn: var(--sf-radius-btn);
+}
+
+/* Headings and small labels pick up each theme's typographic personality */
+.sf-heading {
+  font-family: var(--sf-font-display);
+  font-weight: var(--sf-heading-weight);
+  text-transform: var(--sf-heading-case);
+  letter-spacing: var(--sf-heading-tracking);
+}
+
+.sf-label {
+  font-family: var(--sf-font-label);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
 body {
   @apply bg-white text-gray-900 antialiased;
 }

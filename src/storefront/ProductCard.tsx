@@ -12,7 +12,7 @@ export function ProductCard({ product, slug, currency }: { product: StorefrontPr
 
   return (
     <div className="group">
-      <div className="relative aspect-[3/4] overflow-hidden bg-neutral-100">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-sf bg-sf-surface">
         <Link to={href} className="block h-full">
           {product.images[0] ? (
             <img
@@ -22,12 +22,12 @@ export function ProductCard({ product, slug, currency }: { product: StorefrontPr
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-neutral-400">No image</div>
+            <div className="flex h-full items-center justify-center text-sm text-sf-subtle">No image</div>
           )}
         </Link>
         <div className="pointer-events-none absolute top-0 left-0 flex flex-col items-start gap-1">
-          {product.isNew && <span className="bg-neutral-900 px-1.5 py-1 text-[11px] leading-none text-white">New</span>}
-          {!product.inStock && <span className="bg-white px-1.5 py-1 text-[11px] leading-none text-neutral-700">Sold out</span>}
+          {product.isNew && <span className="bg-sf-primary px-1.5 py-1 text-[11px] leading-none text-sf-on-primary">New</span>}
+          {!product.inStock && <span className="bg-sf-bg px-1.5 py-1 text-[11px] leading-none text-sf-muted">Sold out</span>}
         </div>
         <button
           onClick={() => toggle(product)}
@@ -35,7 +35,7 @@ export function ProductCard({ product, slug, currency }: { product: StorefrontPr
           aria-label={saved ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
           aria-pressed={saved}
         >
-          <Heart className={`h-[22px] w-[22px] ${saved ? 'fill-neutral-900' : ''}`} strokeWidth={1.5} />
+          <Heart className={`h-[22px] w-[22px] ${saved ? 'fill-sf-text' : ''}`} strokeWidth={1.5} />
         </button>
       </div>
       <Link to={href} className="block">
@@ -44,8 +44,8 @@ export function ProductCard({ product, slug, currency }: { product: StorefrontPr
           <span>{formatMoney(onSale ? product.discountPrice! : product.price, currency)}</span>
           {onSale && (
             <>
-              <span className="text-sm text-neutral-400 line-through">{formatMoney(product.price, currency)}</span>
-              <span className="text-sm text-red-700">{Math.round((1 - product.discountPrice! / product.price) * 100)}% off</span>
+              <span className="text-sm text-sf-subtle line-through">{formatMoney(product.price, currency)}</span>
+              <span className="text-sm text-sf-sale">{Math.round((1 - product.discountPrice! / product.price) * 100)}% off</span>
             </>
           )}
         </p>

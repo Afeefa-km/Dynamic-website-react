@@ -25,7 +25,7 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-const control = 'w-full border border-neutral-300 bg-white px-4 py-3 text-sm outline-none focus:border-neutral-900 aria-invalid:border-red-600'
+const control = 'w-full rounded-sf border border-sf-line bg-sf-bg px-4 py-3 text-sm outline-none focus:border-sf-text aria-invalid:border-sf-sale'
 
 const StoreInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function StoreInput(props, ref) {
   return <input ref={ref} {...props} className={control} />
@@ -37,9 +37,9 @@ const StoreTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTM
 function StoreField({ label, error, children, className = '' }: { label: string; error?: string; children: ReactNode; className?: string }) {
   return (
     <label className={`block ${className}`}>
-      <span className="mb-2 block text-xs tracking-[0.1em] text-neutral-600 uppercase">{label}</span>
+      <span className="mb-2 block sf-label text-xs text-sf-muted">{label}</span>
       {children}
-      {error && <span className="mt-1 block text-xs text-red-700">{error}</span>}
+      {error && <span className="mt-1 block text-xs text-sf-sale">{error}</span>}
     </label>
   )
 }
@@ -67,10 +67,10 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto max-w-lg px-4 py-24 text-center">
         <CheckCircle2 className="mx-auto h-12 w-12" strokeWidth={1.25} />
-        <h1 className="mt-6 text-2xl tracking-wide">Thank you for your order</h1>
-        <p className="mt-3 text-sm leading-relaxed text-neutral-600">
-          Order <span className="text-neutral-900">{placed.orderNumber}</span> for{' '}
-          <span className="text-neutral-900">{formatMoney(placed.totalAmount, store.currency)}</span> has been placed.
+        <h1 className="sf-heading mt-6 text-2xl">Thank you for your order</h1>
+        <p className="mt-3 text-sm leading-relaxed text-sf-muted">
+          Order <span className="text-sf-text">{placed.orderNumber}</span> for{' '}
+          <span className="text-sf-text">{formatMoney(placed.totalAmount, store.currency)}</span> has been placed.
           {' '}{store.name} will contact you at {placed.customerPhone} to confirm delivery.
         </p>
         <Link to={base}><StoreButton className="mt-10">Continue shopping</StoreButton></Link>
@@ -85,11 +85,11 @@ export default function CheckoutPage() {
       <div className="pt-8">
         <Breadcrumb items={[{ label: 'Home', to: base }, { label: 'Bag', to: `${base}/cart` }, { label: 'Checkout' }]} />
       </div>
-      <h1 className="mt-8 text-2xl tracking-wide">Checkout</h1>
+      <h1 className="sf-heading mt-8 text-2xl">Checkout</h1>
 
       <div className="mt-8 grid gap-12 lg:grid-cols-[1fr_380px]">
         <form id="checkout" onSubmit={handleSubmit((v) => mutation.mutate(v))} className="grid gap-5 sm:grid-cols-2" noValidate>
-          <p className="text-sm tracking-[0.1em] uppercase sm:col-span-2">Delivery details</p>
+          <p className="sf-label text-sm sm:col-span-2">Delivery details</p>
           <StoreField label="Full name *" error={errors.customerName?.message} className="sm:col-span-2">
             <StoreInput {...register('customerName')} autoComplete="name" aria-invalid={!!errors.customerName} />
           </StoreField>
@@ -108,7 +108,7 @@ export default function CheckoutPage() {
         </form>
 
         <OrderSummary subtotal={subtotal} currency={store.currency}>
-          <ul className="mb-5 space-y-2 border-b border-neutral-200 pb-5 text-sm text-neutral-600">
+          <ul className="mb-5 space-y-2 border-b border-sf-border pb-5 text-sm text-sf-muted">
             {items.map((i) => (
               <li key={i.key} className="flex justify-between gap-3">
                 <span className="truncate">{i.quantity} × {i.name}{i.size !== 'None' && ` (${labelOf(sizeOptions, i.size)})`}</span>

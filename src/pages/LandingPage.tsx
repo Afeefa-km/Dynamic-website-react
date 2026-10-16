@@ -1,6 +1,5 @@
 import { ImagePlus, Link2, ShoppingBag, Store } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
 import { Logo } from '../components/Logo'
 
 const steps = [
@@ -10,7 +9,6 @@ const steps = [
 ]
 
 export default function LandingPage() {
-  const { isAuthenticated } = useAuth()
   const pill = 'rounded-full px-5 py-2.5 text-sm font-semibold'
 
   return (
@@ -18,14 +16,9 @@ export default function LandingPage() {
       <header className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
         <Logo />
         <nav className="flex items-center gap-2">
-          {isAuthenticated ? (
-            <Link to="/dashboard" className={`${pill} bg-brand-700 text-white hover:bg-brand-600`}>Dashboard</Link>
-          ) : (
-            <>
-              <Link to="/login" className={`${pill} text-gray-700 hover:bg-gray-100`}>Sign in</Link>
-              <Link to="/signup" className={`${pill} bg-brand-700 text-white hover:bg-brand-600`}>Get started</Link>
-            </>
-          )}
+          {/* No shortcut into the dashboard from here: owners always go through sign in */}
+          <Link to="/login" className={`${pill} text-gray-700 hover:bg-gray-100`}>Sign in</Link>
+          <Link to="/signup" className={`${pill} bg-brand-700 text-white hover:bg-brand-600`}>Get started</Link>
         </nav>
       </header>
 
@@ -40,8 +33,8 @@ export default function LandingPage() {
           <p className="mt-5 max-w-xl text-lg text-gray-600">
             Storely gives clothing shops, shoe stores, supermarkets and every small business a simple way to sell online.
           </p>
-          <Link to={isAuthenticated ? '/dashboard' : '/signup'} className={`${pill} mt-8 inline-block bg-brand-700 px-8 py-3.5 text-base text-white hover:bg-brand-600`}>
-            {isAuthenticated ? 'Go to dashboard' : 'Create your free store'}
+          <Link to="/signup" className={`${pill} mt-8 inline-block bg-brand-700 px-8 py-3.5 text-base text-white hover:bg-brand-600`}>
+            Create your free store
           </Link>
         </div>
       </section>

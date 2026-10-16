@@ -22,6 +22,10 @@ export const CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'AED', 'SAR', 'QAR'] as c
 export type Currency = (typeof CURRENCIES)[number]
 export const currencyOptions = options(CURRENCIES)
 
+// Looks for the public store website; see storefront/themes.ts for what each one changes
+export const STORE_THEMES = ['Classic', 'Sage', 'Noir', 'Blush', 'Atelier'] as const
+export type StoreTheme = (typeof STORE_THEMES)[number]
+
 export const ORDER_STATUSES = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'] as const
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 export const orderStatusOptions = options(ORDER_STATUSES)

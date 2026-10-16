@@ -2,8 +2,10 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Filter, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { ancestorsOf, childrenOf } from '../lib/categories'
 import { storefrontApi, type StorefrontSort } from '../lib/services'
 import { ProductCard } from './ProductCard'
+import { StoreHero } from './StoreHero'
 import { useStorefront } from './StorefrontLayout'
 import { Breadcrumb, StoreButton, StoreEmpty, StoreLoader } from './ui'
 
@@ -15,7 +17,7 @@ const sortOptions: { value: StorefrontSort; label: string }[] = [
 ]
 
 export default function StoreHomePage() {
-  const { store } = useStorefront()
+  const { store, theme } = useStorefront()
   const [params, setParams] = useSearchParams()
   const [filterOpen, setFilterOpen] = useState(false)
   const categoryId = params.get('category') ?? ''
@@ -23,7 +25,13 @@ export default function StoreHomePage() {
   const sort = (params.get('sort') as StorefrontSort | null) ?? 'newest'
   const page = Math.max(1, Number(params.get('page')) || 1)
   const base = `/store/${store.slug}`
-  const category = store.categories.find((c) => c.id === categoryId)
+  // Top-level category first, the selected one last
+  const trail = categoryId ? ancestorsOf(store.categories, categoryId) : []
+  const category = trail.at(-1)
+  const topCategories = childrenOf(store.categories, null)
+  // Drill-down row: what's inside the selected category, or its siblings once at the deepest level
+  const ownChildren = category ? childrenOf(store.categories, category.id) : []
+  const subcategories = ownChildren.length || !category?.parentId ? ownChildren : childrenOf(store.categories, category.parentId)
 
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)
@@ -41,24 +49,53 @@ export default function StoreHomePage() {
 
   const title = search ? `Results for "${search}"` : category?.name ?? 'All Products'
   const tab = (active: boolean) =>
-    `whitespace-nowrap text-[15px] tracking-wide transition-colors ${active ? 'font-semibold text-neutral-900' : 'text-neutral-500 hover:text-neutral-900'}`
+    `whitespace-nowrap text-[15px] tracking-wide transition-colors ${active ? 'font-semibold text-sf-text' : 'text-sf-muted hover:text-sf-text'}`
+
+  // The hero sits on the landing view only, so browsing, searching and paging stay compact
+  const showHero = theme.hero !== 'none' && !search && !categoryId && page === 1
+  const heroImages = (query.data?.items ?? []).flatMap((p) => (p.images[0] ? [p.images[0]] : []))
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 sm:px-12">
+    <>
+    {showHero && <StoreHero store={store} theme={theme} productImages={heroImages} />}
+    <div id="products" className="mx-auto max-w-[1440px] scroll-mt-28 px-4 sm:px-12">
       <div className="pt-8">
-        <Breadcrumb items={[{ label: 'Home', to: base }, { label: title }]} />
+        <Breadcrumb
+          items={[
+            { label: 'Home', to: base },
+            ...(search ? [] : trail.slice(0, -1).map((c) => ({ label: c.name, to: `${base}?category=${c.id}` }))),
+            { label: title },
+          ]}
+        />
       </div>
 
       <div className="mt-8 flex items-end justify-between gap-6">
         <div className="flex gap-9 overflow-x-auto pb-1">
           <button className={tab(!categoryId)} onClick={() => update({ category: null })}>View All</button>
-          {store.categories.map((c) => (
-            <button key={c.id} className={tab(categoryId === c.id)} onClick={() => update({ category: c.id })}>
+          {topCategories.map((c) => (
+            <button key={c.id} className={tab(trail[0]?.id === c.id)} onClick={() => update({ category: c.id })}>
               {c.name}
             </button>
           ))}
         </div>
       </div>
+
+      {subcategories.length > 0 && (
+        <div className="mt-5 flex flex-wrap gap-2" aria-label="Subcategories">
+          {subcategories.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => update({ category: c.id })}
+              aria-pressed={categoryId === c.id}
+              className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
+                categoryId === c.id ? 'border-sf-primary bg-sf-primary text-sf-on-primary' : 'border-sf-line text-sf-muted hover:border-sf-text'
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="relative mt-10 flex justify-end">
         <button
@@ -69,9 +106,9 @@ export default function StoreHomePage() {
           Filter <Filter className="h-4 w-4" strokeWidth={1.5} />
         </button>
         {filterOpen && (
-          <div className="absolute top-8 right-0 z-20 w-64 border border-neutral-200 bg-white p-5 shadow-lg">
+          <div className="absolute top-8 right-0 z-20 w-64 rounded-sf border border-sf-border bg-sf-bg p-5 shadow-lg">
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs tracking-[0.15em] text-neutral-500 uppercase">Sort by</p>
+              <p className="text-xs sf-label tracking-[0.15em] text-sf-muted uppercase">Sort by</p>
               <button onClick={() => setFilterOpen(false)} aria-label="Close filters"><X className="h-4 w-4" /></button>
             </div>
             <ul className="space-y-1">
@@ -86,7 +123,7 @@ export default function StoreHomePage() {
                         update({ sort: o.value === 'newest' ? null : o.value })
                         setFilterOpen(false)
                       }}
-                      className="accent-neutral-900"
+                      className="accent-sf-primary"
                     />
                     {o.label}
                   </label>
@@ -130,7 +167,7 @@ export default function StoreHomePage() {
                 >
                   Previous
                 </button>
-                <span className="text-neutral-500">{page} / {query.data.totalPages}</span>
+                <span className="text-sf-muted">{page} / {query.data.totalPages}</span>
                 <button
                   disabled={page >= query.data.totalPages}
                   onClick={() => { update({ page: String(page + 1) }); window.scrollTo({ top: 0 }) }}
@@ -144,5 +181,6 @@ export default function StoreHomePage() {
         )}
       </div>
     </div>
+    </>
   )
 }

@@ -12,6 +12,7 @@ import { PageLoader, Spinner } from '../../components/ui/Spinner'
 import { labelOf, productStatusOptions, sizeOptions, type ProductStatus } from '../../constants/enums'
 import { formatMoney, mediaUrl } from '../../lib/format'
 import toast from 'react-hot-toast'
+import { categoryOptions, PATH_SEPARATOR } from '../../lib/categories'
 import { categoryApi, productApi } from '../../lib/services'
 import type { Product } from '../../types/api'
 import { useDashboard } from './DashboardLayout'
@@ -80,7 +81,7 @@ export default function InventoryPage() {
           <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search name or SKU" className="pl-10" />
         </div>
-        <Select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1) }} options={(categoriesQuery.data ?? []).map((c) => ({ value: c.id, label: c.name }))} placeholder="All categories" />
+        <Select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1) }} options={categoryOptions(categoriesQuery.data ?? [])} placeholder="All categories" />
         <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={productStatusOptions} placeholder="All statuses" />
       </div>
 
@@ -101,12 +102,13 @@ export default function InventoryPage() {
             {query.isFetching && (
               <div className="absolute top-3 right-3 text-brand-700"><Spinner className="h-4 w-4" /></div>
             )}
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-[800px] text-left text-sm">
               <thead className="border-b border-gray-100 text-xs text-gray-500 uppercase">
                 <tr>
                   <th className="px-5 py-3 font-medium">Item</th>
                   <th className="px-5 py-3 font-medium">Category</th>
                   <th className="px-5 py-3 font-medium">Price</th>
+                  <th className="px-5 py-3 font-medium">Cost</th>
                   <th className="px-5 py-3 font-medium">Stock</th>
                   <th className="px-5 py-3 font-medium">Status</th>
                   <th className="px-5 py-3" />
@@ -128,7 +130,7 @@ export default function InventoryPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3">{p.categoryName}</td>
+                    <td className="px-5 py-3">{p.categoryPath.map((c) => c.name).join(PATH_SEPARATOR) || p.categoryName}</td>
                     <td className="px-5 py-3">
                       {p.discountPrice ? (
                         <>
@@ -138,6 +140,9 @@ export default function InventoryPage() {
                       ) : (
                         <span className="font-medium">{formatMoney(p.price, store.currency)}</span>
                       )}
+                    </td>
+                    <td className="px-5 py-3">
+                      {p.costPrice > 0 ? formatMoney(p.costPrice, store.currency) : <span className="text-xs text-amber-600">Not set</span>}
                     </td>
                     <td className="px-5 py-3">
                       <p className="font-medium">{p.stockQuantity}</p>
