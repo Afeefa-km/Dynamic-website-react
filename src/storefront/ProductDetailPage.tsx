@@ -10,6 +10,7 @@ import { storefrontApi } from '../lib/services'
 import { useCart } from './CartContext'
 import { useStorefront } from './StorefrontLayout'
 import { Accordion, Breadcrumb, QuantityStepper, StoreButton, StoreEmpty, StoreLoader } from './ui'
+import { ImageViewer } from './ImageViewer'
 import { useWishlist } from './WishlistContext'
 
 export default function ProductDetailPage() {
@@ -20,6 +21,8 @@ export default function ProductDetailPage() {
   const navigate = useNavigate()
   const [qty, setQty] = useState(1)
   const [size, setSize] = useState<ProductSize | null>(null)
+  // Index of the photo open in the zoom viewer
+  const [viewing, setViewing] = useState<number | null>(null)
   const base = `/store/${store.slug}`
 
   const query = useQuery({
@@ -74,7 +77,9 @@ export default function ProductDetailPage() {
           {images.map((img, i) => (
             <div key={i} className="aspect-[3/4] overflow-hidden rounded-sf bg-sf-surface">
               {img ? (
-                <img src={mediaUrl(img)} alt={i === 0 ? p.name : ''} className="h-full w-full object-cover" loading={i > 1 ? 'lazy' : undefined} />
+                <button type="button" onClick={() => setViewing(i)} className="block h-full w-full cursor-zoom-in" aria-label={`View photo ${i + 1} of ${p.name} larger`}>
+                  <img src={mediaUrl(img)} alt={i === 0 ? p.name : ''} className="h-full w-full object-cover" loading={i > 1 ? 'lazy' : undefined} />
+                </button>
               ) : (
                 <div className="flex h-full items-center justify-center text-sf-subtle">No image</div>
               )}
@@ -177,6 +182,9 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+      {viewing !== null && (
+        <ImageViewer images={p.images.map((src) => mediaUrl(src))} startIndex={viewing} alt={p.name} onClose={() => setViewing(null)} />
+      )}
     </div>
   )
 }

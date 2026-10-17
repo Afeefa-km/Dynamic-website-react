@@ -127,6 +127,7 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
   })
 
   const [categoryId, price, costPrice, discountMode, discountValue, variants, details] = watch(['categoryId', 'price', 'costPrice', 'discountMode', 'discountValue', 'variants', 'details'])
+  const status = watch('status')
   const variantFields = useFieldArray({ control, name: 'variants' })
   const totalStock = (variants ?? []).reduce((n, v) => n + (v.stockQuantity && !Number.isNaN(v.stockQuantity) ? v.stockQuantity : 0), 0)
 
@@ -316,7 +317,12 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
                 value={categoryId ?? ''}
                 onChange={(id) => setValue('categoryId', id, { shouldValidate: true, shouldDirty: true })}
               />
-              <Field label="Status" required error={errors.status?.message}>
+              <Field
+                label="Status"
+                required
+                error={errors.status?.message}
+                hint={status === 'OutOfStock' && totalStock > 0 ? 'This item has stock again. Set it to Active so shoppers can buy it.' : undefined}
+              >
                 <Select {...register('status')} options={productStatusOptions} />
               </Field>
             </div>

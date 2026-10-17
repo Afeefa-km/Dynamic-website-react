@@ -165,6 +165,8 @@ export interface OrderItem {
   productId: string | null
   productName: string
   sku: string
+  /** Snapshot taken when the order was placed; empty for very old orders whose product is gone */
+  productCode: string
   size: ProductSize
   unitPrice: number
   quantity: number

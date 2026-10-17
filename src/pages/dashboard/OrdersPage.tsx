@@ -5,6 +5,7 @@ import { Pagination } from '../../components/admin/Pagination'
 import { Badge, type BadgeTone } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { CopyButton } from '../../components/ui/CopyButton'
 import { Input, Select } from '../../components/ui/Field'
 import { PageLoader, Spinner } from '../../components/ui/Spinner'
 import { labelOf, orderStatusOptions, sizeOptions, type OrderStatus } from '../../constants/enums'
@@ -131,7 +132,14 @@ export default function OrdersPage() {
                           <p className="font-medium">{o.customerName}</p>
                           <p className="text-xs text-gray-500">{o.customerPhone}</p>
                         </td>
-                        <td className="px-5 py-3">{itemCount}</td>
+                        <td className="px-5 py-3">
+                          <p>{itemCount} {itemCount === 1 ? 'item' : 'items'}</p>
+                          {/* Product codes at a glance; the full list with copy buttons is in the expanded row */}
+                          <p className="text-xs text-gray-500">
+                            {[...new Set(o.items.map((i) => i.productCode).filter(Boolean))].slice(0, 2).join(', ')}
+                            {new Set(o.items.map((i) => i.productCode).filter(Boolean)).size > 2 && ' …'}
+                          </p>
+                        </td>
                         <td className="px-5 py-3 font-medium">{formatMoney(o.totalAmount, store.currency)}</td>
                         <td className="px-5 py-3">
                           <Badge tone={tone[o.status]}>{labelOf(orderStatusOptions, o.status)}</Badge>
@@ -173,6 +181,11 @@ export default function OrdersPage() {
                                         {i.quantity} × {i.productName}
                                         {i.size && i.size !== 'None' && ` (${labelOf(sizeOptions, i.size)})`}{' '}
                                         <span className="text-xs text-gray-400">{i.sku}</span>
+                                        {i.productCode && (
+                                          <span className="ml-2 inline-flex items-center gap-1 text-xs text-gray-500" onClick={(e) => e.stopPropagation()}>
+                                            Code {i.productCode} <CopyButton value={i.productCode} label="Product code" />
+                                          </span>
+                                        )}
                                       </span>
                                       <span>{formatMoney(i.lineTotal, store.currency)}</span>
                                     </li>

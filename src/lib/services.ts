@@ -63,6 +63,7 @@ export const storefrontApi = {
   store: (slug: string) => get<Storefront>(`/storefront/${slug}`),
   products: (slug: string, params: { categoryId?: string; search?: string; sort?: StorefrontSort; page?: number; pageSize?: number }) =>
     get<Paged<StorefrontProduct>>(`/storefront/${slug}/products`, { params }),
-  product: (slug: string, id: string) => get<StorefrontProduct>(`/storefront/${slug}/products/${id}`),
+  product: (slug: string, id: string, options?: { silentError?: boolean }) =>
+    get<StorefrontProduct>(`/storefront/${slug}/products/${id}`, { silentError: options?.silentError }),
   placeOrder: (slug: string, body: PlaceOrderInput) => post<Order>(`/storefront/${slug}/orders`, body),
 }
