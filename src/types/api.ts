@@ -95,6 +95,8 @@ export interface Product {
   discountPrice: number | null
   costPrice: number
   sku: string
+  /** System-generated 8-digit code shoppers and owners can search by */
+  productCode: string
   variants: ProductVariant[]
   stockQuantity: number
   status: ProductStatus
@@ -150,6 +152,8 @@ export interface StorefrontProduct {
   price: number
   discountPrice: number | null
   sku: string
+  /** System-generated 8-digit code shoppers and owners can search by */
+  productCode: string
   variants: ProductVariant[]
   inStock: boolean
   stockQuantity: number
@@ -250,4 +254,21 @@ export interface PlaceOrderInput {
   shippingAddress: string
   notes?: string
   items: { productId: string; size: ProductSize; quantity: number }[]
+}
+
+export interface LowStockAlert {
+  productId: string
+  productName: string
+  sku: string
+  productCode: string
+  /** 'None' for products without sizes */
+  size: ProductSize
+  stockQuantity: number
+  updatedAt: string
+}
+
+export interface LowStock {
+  /** A size is listed when fewer than this many are left */
+  threshold: number
+  items: LowStockAlert[]
 }

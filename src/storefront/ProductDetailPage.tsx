@@ -162,6 +162,7 @@ export default function ProductDetailPage() {
               <dl className="grid grid-cols-[110px_1fr] gap-y-1">
                 <dt className="text-sf-subtle">Category</dt><dd>{p.categoryPath.map((c) => c.name).join(PATH_SEPARATOR) || p.categoryName}</dd>
                 <dt className="text-sf-subtle">SKU</dt><dd>{p.sku}</dd>
+                <dt className="text-sf-subtle">Product code</dt><dd>{p.productCode}</dd>
               </dl>
             </Accordion>
             <Accordion title="Delivery & Return">

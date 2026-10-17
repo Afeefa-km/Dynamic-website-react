@@ -1,12 +1,14 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Package, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ConfirmModal } from '../../components/admin/ConfirmModal'
 import { Pagination } from '../../components/admin/Pagination'
 import { ProductFormModal } from '../../components/admin/ProductFormModal'
 import { Badge, type BadgeTone } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { CopyButton } from '../../components/ui/CopyButton'
 import { Input, Select } from '../../components/ui/Field'
 import { PageLoader, Spinner } from '../../components/ui/Spinner'
 import { labelOf, productStatusOptions, sizeOptions, type ProductStatus } from '../../constants/enums'
@@ -25,9 +27,19 @@ export default function InventoryPage() {
   const [page, setPage] = useState(1)
   const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState('')
-  const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
+  const [params] = useSearchParams()
+  const [searchInput, setSearchInput] = useState(() => params.get('search') ?? '')
+  const [search, setSearch] = useState(() => params.get('search') ?? '')
   const [editing, setEditing] = useState<Product | 'new' | null>(onboarding ? 'new' : null)
+
+  // A low-stock notification opens this page with ?search=<product code>, even when it's already open
+  const searchParam = params.get('search')
+  useEffect(() => {
+    if (searchParam === null) return
+    setSearchInput(searchParam)
+    setSearch(searchParam)
+    setPage(1)
+  }, [searchParam])
   const [deleting, setDeleting] = useState<Product | null>(null)
 
   // Debounce search
@@ -54,6 +66,7 @@ export default function InventoryPage() {
       setDeleting(null)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
       queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['low-stock'] })
     },
   })
 
@@ -79,7 +92,7 @@ export default function InventoryPage() {
       <div className="mb-5 grid gap-3 rounded-3xl bg-white p-3 sm:grid-cols-[1fr_180px_180px]">
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search name or SKU" className="pl-10" />
+          <Input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Search name, SKU or product code" className="pl-10" />
         </div>
         <Select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1) }} options={categoryOptions(categoriesQuery.data ?? [])} placeholder="All categories" />
         <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1) }} options={productStatusOptions} placeholder="All statuses" />
@@ -124,8 +137,11 @@ export default function InventoryPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="truncate font-medium">{p.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {p.sku}
+                          <p className="flex items-center gap-1 text-xs whitespace-nowrap text-gray-500">
+                            <span className="text-gray-400">SKU</span> {p.sku} <CopyButton value={p.sku} label="SKU" />
+                          </p>
+                          <p className="flex items-center gap-1 text-xs whitespace-nowrap text-gray-500">
+                            <span className="text-gray-400">Code</span> {p.productCode} <CopyButton value={p.productCode} label="Product code" />
                           </p>
                         </div>
                       </div>

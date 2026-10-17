@@ -4,6 +4,7 @@ import { ChevronDown, ExternalLink, LayoutDashboard, LogOut, Menu, Package, Pane
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
+import { LowStockBell } from '../../components/admin/LowStockBell'
 import { StoreFormModal } from '../../components/admin/StoreFormModal'
 import { ThemeOnboardingModal } from '../../components/admin/ThemeOnboardingModal'
 import { Logo } from '../../components/Logo'
@@ -199,6 +200,7 @@ export default function DashboardLayout() {
             >
               View store <ExternalLink className="h-4 w-4" />
             </a>
+            <LowStockBell />
             <ProfileMenu
               name={user?.fullName ?? ''}
               email={user?.email ?? ''}

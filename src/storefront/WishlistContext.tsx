@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import toast from 'react-hot-toast'
 import type { StorefrontProduct } from '../types/api'
 
 export interface WishlistItem {
@@ -33,14 +34,26 @@ export function WishlistProvider({ slug, children }: { slug: string; children: R
 
   useEffect(() => localStorage.setItem(storageKey, JSON.stringify(items)), [storageKey, items])
 
-  const toggle = useCallback((p: StorefrontProduct) => {
-    setItems((prev) =>
-      prev.some((i) => i.productId === p.id)
-        ? prev.filter((i) => i.productId !== p.id)
-        : [...prev, { productId: p.id, name: p.name, image: p.images[0], price: p.price, discountPrice: p.discountPrice }],
-    )
-  }, [])
-  const remove = useCallback((id: string) => setItems((prev) => prev.filter((i) => i.productId !== id)), [])
+  const toggle = useCallback(
+    (p: StorefrontProduct) => {
+      const saved = items.some((i) => i.productId === p.id)
+      setItems((prev) =>
+        saved
+          ? prev.filter((i) => i.productId !== p.id)
+          : [...prev, { productId: p.id, name: p.name, image: p.images[0], price: p.price, discountPrice: p.discountPrice }],
+      )
+      toast.success(saved ? `Removed "${p.name}" from your wishlist` : `Added "${p.name}" to your wishlist`, { id: `wishlist-${p.id}` })
+    },
+    [items],
+  )
+  const remove = useCallback(
+    (id: string) => {
+      const item = items.find((i) => i.productId === id)
+      setItems((prev) => prev.filter((i) => i.productId !== id))
+      if (item) toast.success(`Removed "${item.name}" from your wishlist`, { id: `wishlist-${id}` })
+    },
+    [items],
+  )
   const has = useCallback((id: string) => items.some((i) => i.productId === id), [items])
 
   const value = useMemo(() => ({ items, has, toggle, remove }), [items, has, toggle, remove])

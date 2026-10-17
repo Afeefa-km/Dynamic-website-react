@@ -203,6 +203,7 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
       if (failed) toast.error(`${failed} image(s) failed to upload. You can retry by editing the item.`)
       toast.success(product ? 'Inventory item updated.' : 'Item added to inventory.')
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['low-stock'] })
       onSaved()
     },
     onSettled: () => setProgress(''),

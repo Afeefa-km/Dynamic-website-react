@@ -53,6 +53,7 @@ export default function OrdersPage() {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       queryClient.invalidateQueries({ queryKey: ['orders-dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['products'] }) // cancelling restocks inventory
+      queryClient.invalidateQueries({ queryKey: ['low-stock'] })
     },
   })
 

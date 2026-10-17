@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { RequireAuth } from './auth/RequireAuth'
 import LoginPage from './pages/auth/LoginPage'
 import SignupPage from './pages/auth/SignupPage'
@@ -15,8 +16,20 @@ import StoreHomePage from './storefront/StoreHomePage'
 import StorefrontLayout from './storefront/StorefrontLayout'
 import WishlistPage from './storefront/WishlistPage'
 
+/** Opening a new page (a product, the cart…) starts at the top instead of keeping the previous scroll position. */
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    // Block body on purpose: an effect must not return anything, and some browsers return a value from scrollTo
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
+
 export default function App() {
   return (
+    <>
+    <ScrollToTop />
     <Routes>
       <Route path="/" element={<LandingPage />} />
 
@@ -45,5 +58,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }

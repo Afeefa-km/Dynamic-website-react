@@ -1,5 +1,5 @@
 import type {
-  AuthResponse, Category, Order, OrderDashboard, Paged, PlaceOrderInput, Product, ProductImage, ProductInput, Store, StoreInput, Storefront,
+  AuthResponse, Category, LowStock, Order, OrderDashboard, Paged, PlaceOrderInput, Product, ProductImage, ProductInput, Store, StoreInput, Storefront,
   StorefrontProduct, User,
 } from '../types/api'
 import type { OrderStatus, StoreTheme } from '../constants/enums'
@@ -41,6 +41,7 @@ export interface ProductQuery {
 
 export const productApi = {
   list: (params: ProductQuery) => get<Paged<Product>>('/products', { params }),
+  lowStock: () => get<LowStock>('/products/low-stock', { silentError: true }),
   create: (body: ProductInput) => post<Product>('/products', body, { silent: true }),
   update: (id: string, body: ProductInput) => put<Product>(`/products/${id}`, body, { silent: true }),
   remove: (id: string) => del<boolean>(`/products/${id}`, { silent: true }),
