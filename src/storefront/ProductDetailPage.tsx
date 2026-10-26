@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Heart } from 'lucide-react'
+import { Heart, Ruler } from 'lucide-react'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -11,6 +11,7 @@ import { useCart } from './CartContext'
 import { useStorefront } from './StorefrontLayout'
 import { Accordion, Breadcrumb, QuantityStepper, StoreButton, StoreEmpty, StoreLoader } from './ui'
 import { ImageViewer } from './ImageViewer'
+import { SizeChartDialog } from './SizeChartDialog'
 import { useWishlist } from './WishlistContext'
 
 export default function ProductDetailPage() {
@@ -23,6 +24,7 @@ export default function ProductDetailPage() {
   const [size, setSize] = useState<ProductSize | null>(null)
   // Index of the photo open in the zoom viewer
   const [viewing, setViewing] = useState<number | null>(null)
+  const [showSizeChart, setShowSizeChart] = useState(false)
   const base = `/store/${store.slug}`
 
   const query = useQuery({
@@ -48,7 +50,9 @@ export default function ProductDetailPage() {
   const images = p.images.length ? p.images : ['']
   const hasSizes = p.variants.some((v) => v.size !== 'None')
   // Products without sizes have a single "None" variant that is selected implicitly
-  const variant = hasSizes ? p.variants.find((v) => v.size === size) : p.variants[0]
+  // A product with a single size (e.g. Free size) needs no choosing: it's selected for the shopper
+  const onlyVariant = p.variants.length === 1 ? p.variants[0] : undefined
+  const variant = hasSizes ? (p.variants.find((v) => v.size === size) ?? onlyVariant) : p.variants[0]
   const stock = variant?.stockQuantity ?? 0
   const addToBag = () => {
     if (!variant) {
@@ -110,11 +114,18 @@ export default function ProductDetailPage() {
 
           {hasSizes && (
             <div className="mb-6">
-              <p className="text-sm tracking-[0.06em] uppercase">Size</p>
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm tracking-[0.06em] uppercase">Size</p>
+                {p.sizeChart && (
+                  <button type="button" onClick={() => setShowSizeChart(true)} className="inline-flex items-center gap-1.5 text-sm underline underline-offset-4 hover:text-sf-muted">
+                    <Ruler className="h-4 w-4" strokeWidth={1.5} /> Size chart
+                  </button>
+                )}
+              </div>
               <div className="mt-4 flex flex-wrap gap-2" role="radiogroup" aria-label="Size">
                 {p.variants.map((v) => {
                   const soldOut = v.stockQuantity <= 0
-                  const selected = size === v.size
+                  const selected = variant?.size === v.size
                   return (
                     <button
                       key={v.size}
@@ -133,6 +144,12 @@ export default function ProductDetailPage() {
                 })}
               </div>
             </div>
+          )}
+
+          {!hasSizes && p.sizeChart && (
+            <button type="button" onClick={() => setShowSizeChart(true)} className="mb-6 inline-flex items-center gap-1.5 text-sm underline underline-offset-4 hover:text-sf-muted">
+              <Ruler className="h-4 w-4" strokeWidth={1.5} /> Size chart
+            </button>
           )}
 
           <p className="text-sm tracking-[0.06em] uppercase">Quantity</p>
@@ -182,6 +199,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+      {showSizeChart && p.sizeChart && <SizeChartDialog chart={p.sizeChart} onClose={() => setShowSizeChart(false)} />}
       {viewing !== null && (
         <ImageViewer images={p.images.map((src) => mediaUrl(src))} startIndex={viewing} alt={p.name} onClose={() => setViewing(null)} />
       )}

@@ -91,6 +91,8 @@ export interface Product {
   categoryName: string
   /** Top-level category first, the product's own category last */
   categoryPath: CategoryPathItem[]
+  sizeChartId: string | null
+  sizeChartName: string | null
   price: number
   discountPrice: number | null
   costPrice: number
@@ -110,6 +112,7 @@ export interface ProductInput {
   description?: string
   details?: string
   categoryId: string
+  sizeChartId?: string | null
   price: number
   discountPrice?: number | null
   costPrice: number
@@ -155,6 +158,7 @@ export interface StorefrontProduct {
   /** System-generated 8-digit code shoppers and owners can search by */
   productCode: string
   variants: ProductVariant[]
+  sizeChart: StorefrontSizeChart | null
   inStock: boolean
   stockQuantity: number
   images: string[]
@@ -273,4 +277,27 @@ export interface LowStock {
   /** A size is listed when fewer than this many are left */
   threshold: number
   items: LowStockAlert[]
+}
+
+/** A reusable size guide, named for the garment it fits (e.g. "Kurti") */
+export interface SizeChart {
+  id: string
+  name: string
+  description: string
+  /** Image paths in display order, 1 to 3 */
+  images: string[]
+  /** How many products show this chart */
+  productCount: number
+}
+
+export interface SizeChartInput {
+  name: string
+  description?: string
+  images: string[]
+}
+
+export interface StorefrontSizeChart {
+  name: string
+  description: string
+  images: string[]
 }

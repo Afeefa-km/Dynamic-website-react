@@ -1,5 +1,5 @@
 import type {
-  AuthResponse, Category, LowStock, Order, OrderDashboard, Paged, PlaceOrderInput, Product, ProductImage, ProductInput, Store, StoreInput, Storefront,
+  AuthResponse, Category, LowStock, SizeChart, SizeChartInput, Order, OrderDashboard, Paged, PlaceOrderInput, Product, ProductImage, ProductInput, Store, StoreInput, Storefront,
   StorefrontProduct, User,
 } from '../types/api'
 import type { OrderStatus, StoreTheme } from '../constants/enums'
@@ -51,6 +51,14 @@ export const productApi = {
     del<boolean>(`/media/products/${productId}/images/${imageId}`, { silent: true }),
 }
 
+export const sizeChartApi = {
+  list: () => get<SizeChart[]>('/size-charts'),
+  create: (body: SizeChartInput) => post<SizeChart>('/size-charts', body),
+  update: (id: string, body: SizeChartInput) => put<SizeChart>(`/size-charts/${id}`, body),
+  remove: (id: string) => del<boolean>(`/size-charts/${id}`),
+  uploadImage: (file: File) => uploadFile<{ url: string }>('/media/size-chart', file, { silent: true }),
+}
+
 export const orderApi = {
   list: (params: { status?: string; search?: string; days?: number; page?: number; pageSize?: number }) => get<Paged<Order>>('/orders', { params }),
   dashboard: (from: string, to: string) => get<OrderDashboard>('/orders/dashboard', { params: { from, to } }),
@@ -61,7 +69,8 @@ export type StorefrontSort = 'newest' | 'price_asc' | 'price_desc'
 
 export const storefrontApi = {
   store: (slug: string) => get<Storefront>(`/storefront/${slug}`),
-  products: (slug: string, params: { categoryId?: string; search?: string; sort?: StorefrontSort; page?: number; pageSize?: number }) =>
+  // categoryIds: several comma-separated categories at once (e.g. Shirts and T-shirts); takes precedence over categoryId
+  products: (slug: string, params: { categoryId?: string; categoryIds?: string; search?: string; sort?: StorefrontSort; page?: number; pageSize?: number }) =>
     get<Paged<StorefrontProduct>>(`/storefront/${slug}/products`, { params }),
   product: (slug: string, id: string, options?: { silentError?: boolean }) =>
     get<StorefrontProduct>(`/storefront/${slug}/products/${id}`, { silentError: options?.silentError }),

@@ -13,16 +13,25 @@ interface Props {
 
 const widths = { md: 'sm:max-w-lg', lg: 'sm:max-w-3xl', xl: 'sm:max-w-5xl' }
 
+// Open popups, newest last. A popup can open on top of another (e.g. "new size chart" from the product form),
+// and Escape should close only the one in front.
+const openStack: symbol[] = []
+
 /** Omit onClose to make the modal mandatory (no close button, no escape). */
 export function Modal({ open, title, subtitle, onClose, children, footer, size = 'md' }: Props) {
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose?.()
+    const id = Symbol('modal')
+    openStack.push(id)
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && openStack[openStack.length - 1] === id) onClose?.()
+    }
     document.addEventListener('keydown', onKey)
     document.body.style.overflow = 'hidden'
     return () => {
       document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
+      openStack.splice(openStack.indexOf(id), 1)
+      if (openStack.length === 0) document.body.style.overflow = ''
     }
   }, [open, onClose])
 

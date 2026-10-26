@@ -103,12 +103,13 @@ export default function OrdersPage() {
             {query.isFetching && (
               <div className="absolute top-3 right-3 text-brand-700"><Spinner className="h-4 w-4" /></div>
             )}
-            <table className="w-full min-w-[820px] text-left text-sm">
+            <table className="w-full min-w-[920px] text-left text-sm">
               <thead className="border-b border-gray-100 text-xs text-gray-500 uppercase">
                 <tr>
                   <th className="px-5 py-3 font-medium">Order</th>
                   <th className="px-5 py-3 font-medium">Customer</th>
                   <th className="px-5 py-3 font-medium">Items</th>
+                  <th className="px-5 py-3 font-medium">Product code</th>
                   <th className="px-5 py-3 font-medium">Total</th>
                   <th className="px-5 py-3 font-medium">Status</th>
                   <th className="px-5 py-3 font-medium">Update</th>
@@ -121,6 +122,8 @@ export default function OrdersPage() {
                   const updating = statusMutation.isPending && statusMutation.variables?.id === o.id
                   const open = expanded.has(o.id)
                   const itemCount = o.items.reduce((n, i) => n + i.quantity, 0)
+                  // One entry per product, in the order they appear on the order
+                  const codes = [...new Set(o.items.map((i) => i.productCode).filter(Boolean))]
                   return (
                     <Fragment key={o.id}>
                       <tr className="cursor-pointer hover:bg-gray-50" onClick={() => toggle(o.id)}>
@@ -132,13 +135,20 @@ export default function OrdersPage() {
                           <p className="font-medium">{o.customerName}</p>
                           <p className="text-xs text-gray-500">{o.customerPhone}</p>
                         </td>
-                        <td className="px-5 py-3">
-                          <p>{itemCount} {itemCount === 1 ? 'item' : 'items'}</p>
-                          {/* Product codes at a glance; the full list with copy buttons is in the expanded row */}
-                          <p className="text-xs text-gray-500">
-                            {[...new Set(o.items.map((i) => i.productCode).filter(Boolean))].slice(0, 2).join(', ')}
-                            {new Set(o.items.map((i) => i.productCode).filter(Boolean)).size > 2 && ' …'}
-                          </p>
+                        <td className="px-5 py-3">{itemCount} {itemCount === 1 ? 'item' : 'items'}</td>
+                        <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                          {codes.length === 0 ? (
+                            <span className="text-gray-400">—</span>
+                          ) : (
+                            <ul className="space-y-0.5">
+                              {codes.slice(0, 3).map((code) => (
+                                <li key={code} className="flex items-center gap-1 font-mono text-xs whitespace-nowrap text-gray-700">
+                                  {code} <CopyButton value={code} label="Product code" />
+                                </li>
+                              ))}
+                              {codes.length > 3 && <li className="text-xs text-gray-500">+{codes.length - 3} more</li>}
+                            </ul>
+                          )}
                         </td>
                         <td className="px-5 py-3 font-medium">{formatMoney(o.totalAmount, store.currency)}</td>
                         <td className="px-5 py-3">
@@ -170,7 +180,7 @@ export default function OrdersPage() {
                       </tr>
                       {open && (
                         <tr>
-                          <td colSpan={7} className="px-5 pb-5">
+                          <td colSpan={8} className="px-5 pb-5">
                             <div className="grid gap-4 rounded-2xl bg-surface p-4 sm:grid-cols-2">
                               <div>
                                 <p className="mb-2 font-medium">Items</p>

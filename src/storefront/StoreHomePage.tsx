@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Filter, X } from 'lucide-react'
+import { Check, Filter, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ancestorsOf, childrenOf } from '../lib/categories'
@@ -29,9 +29,21 @@ export default function StoreHomePage() {
   const trail = categoryId ? ancestorsOf(store.categories, categoryId) : []
   const category = trail.at(-1)
   const topCategories = childrenOf(store.categories, null)
-  // Drill-down row: what's inside the selected category, or its siblings once at the deepest level
+  // Subcategory chips: the children of the category being browsed. Shoppers can tick several at once
+  // (e.g. Shirts and T-shirts under Men); they're kept in ?sub=id1,id2. A deep link straight to a leaf
+  // category shows its siblings with that one ticked.
   const ownChildren = category ? childrenOf(store.categories, category.id) : []
-  const subcategories = ownChildren.length || !category?.parentId ? ownChildren : childrenOf(store.categories, category.parentId)
+  const isLeaf = !!category && ownChildren.length === 0 && !!category.parentId
+  const chipParent = isLeaf ? store.categories.find((c) => c.id === category.parentId) : category
+  const subcategories = chipParent ? childrenOf(store.categories, chipParent.id) : []
+  const subParam = (params.get('sub') ?? '').split(',').filter((id) => subcategories.some((c) => c.id === id))
+  const selectedSubs = subParam.length ? subParam : isLeaf ? [category.id] : []
+
+  const toggleSub = (id: string) => {
+    if (!chipParent) return
+    const next = selectedSubs.includes(id) ? selectedSubs.filter((s) => s !== id) : [...selectedSubs, id]
+    update({ category: chipParent.id, sub: next.length ? next.join(',') : null })
+  }
 
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(params)
@@ -41,13 +53,29 @@ export default function StoreHomePage() {
   }
 
   const query = useQuery({
-    queryKey: ['storefront-products', store.slug, { categoryId, search, sort, page }],
+    queryKey: ['storefront-products', store.slug, { categoryId, subs: selectedSubs.join(','), search, sort, page }],
     queryFn: () =>
-      storefrontApi.products(store.slug, { categoryId: categoryId || undefined, search: search || undefined, sort, page, pageSize: PAGE_SIZE }),
+      storefrontApi.products(store.slug, {
+        categoryId: categoryId || undefined,
+        categoryIds: selectedSubs.length ? selectedSubs.join(',') : undefined,
+        search: search || undefined,
+        sort,
+        page,
+        pageSize: PAGE_SIZE,
+      }),
     placeholderData: keepPreviousData,
   })
 
-  const title = search ? `Results for "${search}"` : category?.name ?? 'All Products'
+  const selectedNames = selectedSubs.map((id) => subcategories.find((c) => c.id === id)?.name).filter(Boolean)
+  const title = search
+    ? `Results for "${search}"`
+    : selectedNames.length
+      ? `${chipParent?.name}: ${selectedNames.join(', ')}`
+      : category?.name ?? 'All Products'
+  const chip = (on: boolean) =>
+    `inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm transition-colors ${
+      on ? 'border-sf-primary bg-sf-primary text-sf-on-primary' : 'border-sf-line text-sf-muted hover:border-sf-text'
+    }`
   const tab = (active: boolean) =>
     `whitespace-nowrap text-[15px] tracking-wide transition-colors ${active ? 'font-semibold text-sf-text' : 'text-sf-muted hover:text-sf-text'}`
 
@@ -71,9 +99,9 @@ export default function StoreHomePage() {
 
       <div className="mt-8 flex items-end justify-between gap-6">
         <div className="flex gap-9 overflow-x-auto pb-1">
-          <button className={tab(!categoryId)} onClick={() => update({ category: null })}>View All</button>
+          <button className={tab(!categoryId)} onClick={() => update({ category: null, sub: null })}>View All</button>
           {topCategories.map((c) => (
-            <button key={c.id} className={tab(trail[0]?.id === c.id)} onClick={() => update({ category: c.id })}>
+            <button key={c.id} className={tab(trail[0]?.id === c.id)} onClick={() => update({ category: c.id, sub: null })}>
               {c.name}
             </button>
           ))}
@@ -81,19 +109,24 @@ export default function StoreHomePage() {
       </div>
 
       {subcategories.length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2" aria-label="Subcategories">
-          {subcategories.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => update({ category: c.id })}
-              aria-pressed={categoryId === c.id}
-              className={`rounded-full border px-4 py-1.5 text-sm transition-colors ${
-                categoryId === c.id ? 'border-sf-primary bg-sf-primary text-sf-on-primary' : 'border-sf-line text-sf-muted hover:border-sf-text'
-              }`}
-            >
-              {c.name}
-            </button>
-          ))}
+        <div className="mt-5 flex flex-wrap items-center gap-2" role="group" aria-label={`Filter ${chipParent?.name ?? ''} by type`}>
+          <button
+            onClick={() => chipParent && update({ category: chipParent.id, sub: null })}
+            aria-pressed={selectedSubs.length === 0}
+            className={chip(selectedSubs.length === 0)}
+          >
+            All {chipParent?.name}
+          </button>
+          {subcategories.map((c) => {
+            const on = selectedSubs.includes(c.id)
+            return (
+              <button key={c.id} onClick={() => toggleSub(c.id)} aria-pressed={on} className={chip(on)}>
+                {on && <Check className="h-3.5 w-3.5" />}
+                {c.name}
+              </button>
+            )
+          })}
+          {selectedSubs.length > 1 && <span className="text-xs text-sf-muted">{selectedSubs.length} selected</span>}
         </div>
       )}
 

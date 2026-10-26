@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
-import { ChevronDown, ExternalLink, LayoutDashboard, LogOut, Menu, Package, PanelLeftClose, PanelLeftOpen, Settings, ShoppingCart, Tags, X } from 'lucide-react'
+import { ChevronDown, ExternalLink, LayoutDashboard, LogOut, Menu, Package, PanelLeftClose, PanelLeftOpen, Ruler, Settings, ShoppingCart, Tags, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, useOutletContext } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
@@ -28,6 +28,7 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/dashboard/inventory', label: 'Inventory', icon: Package },
   { to: '/dashboard/categories', label: 'Categories', icon: Tags },
+  { to: '/dashboard/size-charts', label: 'Size charts', icon: Ruler },
   { to: '/dashboard/orders', label: 'Orders', icon: ShoppingCart },
 ]
 

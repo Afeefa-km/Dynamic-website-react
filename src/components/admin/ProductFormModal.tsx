@@ -7,11 +7,12 @@ import toast from 'react-hot-toast'
 import { z } from 'zod'
 import { PRODUCT_SIZES, PRODUCT_STATUSES, productStatusOptions, sizeOptions } from '../../constants/enums'
 import { formatMoney, mediaUrl } from '../../lib/format'
-import { categoryApi, productApi } from '../../lib/services'
+import { categoryApi, productApi, sizeChartApi } from '../../lib/services'
 import { toNumber } from '../../lib/validation'
 import type { Product } from '../../types/api'
 import { Button } from '../ui/Button'
 import { CategoryTreeSelect } from './CategoryTreeSelect'
+import { SizeChartFormModal } from './SizeChartFormModal'
 import { Field, fieldLabel, Input, Select, Textarea } from '../ui/Field'
 import { ImagePicker, type PickedImage } from '../ui/ImagePicker'
 import { Modal } from '../ui/Modal'
@@ -28,7 +29,7 @@ type SectionId = 'basic' | 'pricing' | 'stock' | 'details' | 'images'
 const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; required?: boolean; fields: string[] }[] = [
   { id: 'basic', label: 'Basic details', icon: FileText, required: true, fields: ['name', 'categoryId', 'status', 'description'] },
   { id: 'pricing', label: 'Pricing', icon: Tag, required: true, fields: ['price', 'costPrice', 'discountValue'] },
-  { id: 'stock', label: 'Sizes & stock', icon: Boxes, fields: ['variants'] },
+  { id: 'stock', label: 'Sizes & stock', icon: Boxes, fields: ['variants', 'sizeChartId'] },
   { id: 'details', label: 'Product details', icon: ScrollText, fields: ['details'] },
   { id: 'images', label: 'Images', icon: ImageIcon, fields: [] },
 ]
@@ -56,6 +57,8 @@ const schema = z
         }),
       ),
     status: z.enum(PRODUCT_STATUSES),
+    // '' means no size chart
+    sizeChartId: z.string().optional(),
   })
   .superRefine((v, ctx) => {
     const seen = new Set<string>()
@@ -106,6 +109,8 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
   const [section, setSection] = useState<SectionId>('basic')
 
   const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: categoryApi.list })
+  const sizeChartsQuery = useQuery({ queryKey: ['size-charts'], queryFn: sizeChartApi.list })
+  const [creatingChart, setCreatingChart] = useState(false)
 
   const { register, handleSubmit, watch, setValue, control, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -115,6 +120,7 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
           description: product.description,
           details: product.details,
           categoryId: product.categoryId,
+          sizeChartId: product.sizeChartId ?? '',
           price: product.price,
           // 0 means it was never entered, so leave the field blank rather than suggest the item was free
           costPrice: product.costPrice || undefined,
@@ -123,7 +129,7 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
           variants: product.variants.length ? product.variants : [{ size: 'None', stockQuantity: undefined }],
           status: product.status,
         }
-      : { categoryId: '', discountMode: 'amount', status: 'Active', variants: [{ size: 'None', stockQuantity: undefined }] },
+      : { categoryId: '', sizeChartId: '', discountMode: 'amount', status: 'Active', variants: [{ size: 'None', stockQuantity: undefined }] },
   })
 
   const [categoryId, price, costPrice, discountMode, discountValue, variants, details] = watch(['categoryId', 'price', 'costPrice', 'discountMode', 'discountValue', 'variants', 'details'])
@@ -179,7 +185,7 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
       const variantsToSave = rest.variants
         .filter((v) => !(v.size === 'None' && v.stockQuantity === undefined && rest.variants.length === 1))
         .map((v) => ({ size: v.size, stockQuantity: v.stockQuantity ?? 0 }))
-      const body = { ...rest, variants: variantsToSave, costPrice: values.costPrice ?? 0, discountPrice: toDiscountPrice(values.price, mode, value) ?? null }
+      const body = { ...rest, sizeChartId: values.sizeChartId || null, variants: variantsToSave, costPrice: values.costPrice ?? 0, discountPrice: toDiscountPrice(values.price, mode, value) ?? null }
       setProgress('Saving item…')
       const saved = product ? await productApi.update(product.id, body) : await productApi.create(body)
 
@@ -211,6 +217,8 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
   })
 
   const busy = mutation.isPending
+  const sizeChartId = watch('sizeChartId')
+  const selectedChart = sizeChartsQuery.data?.find((c) => c.id === sizeChartId)
   const formId = 'product-form'
   const num = { setValueAs: toNumber }
   // Blank or 0 both mean "no discount"
@@ -454,6 +462,33 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
               {errors.variants?.message && <span className="mt-1 block text-xs text-red-600">{errors.variants.message}</span>}
               {errors.variants?.root?.message && <span className="mt-1 block text-xs text-red-600">{errors.variants.root.message}</span>}
             </div>
+
+            <div>
+              <div className={`${fieldLabel} justify-between`}>
+                <span>
+                  Size chart <span className="font-normal text-gray-400">(optional)</span>
+                </span>
+                <button type="button" onClick={() => setCreatingChart(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 hover:underline">
+                  <Plus className="h-3.5 w-3.5" /> New size chart
+                </button>
+              </div>
+              <Select
+                {...register('sizeChartId')}
+                options={(sizeChartsQuery.data ?? []).map((c) => ({ value: c.id, label: c.name }))}
+                placeholder={sizeChartsQuery.isPending ? 'Loading…' : 'No size chart'}
+                aria-label="Size chart"
+              />
+              {selectedChart ? (
+                <div className="mt-2 flex items-center gap-2">
+                  {selectedChart.images.map((src) => (
+                    <img key={src} src={mediaUrl(src)} alt="" className="h-12 w-12 rounded-lg border border-gray-200 object-cover" />
+                  ))}
+                  <span className="text-xs text-gray-500">Shoppers can open this from the product page.</span>
+                </div>
+              ) : (
+                <span className="mt-1 block text-xs text-gray-500">Pick a chart you've made before, or create a new one. Manage them under Size charts.</span>
+              )}
+            </div>
           </div>
 
           <div role="tabpanel" id={`${formId}-panel-details`} aria-labelledby={`${formId}-tab-details`} className={panel('details')}>
@@ -486,6 +521,17 @@ export function ProductFormModal({ open, product, currency, onClose, onSaved }: 
           </div>
         </div>
       </form>
+      {creatingChart && (
+        <SizeChartFormModal
+          onClose={() => setCreatingChart(false)}
+          onSaved={(chart) => {
+            // Show it in the list straight away, then select it
+            queryClient.setQueryData(['size-charts'], (old: typeof sizeChartsQuery.data) => [...(old ?? []), chart])
+            setValue('sizeChartId', chart.id, { shouldDirty: true })
+            setCreatingChart(false)
+          }}
+        />
+      )}
     </Modal>
   )
 }

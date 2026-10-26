@@ -7,6 +7,7 @@ import DashboardLayout from './pages/dashboard/DashboardLayout'
 import DashboardOverview from './pages/dashboard/DashboardOverview'
 import OrdersPage from './pages/dashboard/OrdersPage'
 import CategoriesPage from './pages/dashboard/CategoriesPage'
+import SizeChartsPage from './pages/dashboard/SizeChartsPage'
 import InventoryPage from './pages/dashboard/InventoryPage'
 import LandingPage from './pages/LandingPage'
 import CartPage from './storefront/CartPage'
@@ -42,6 +43,7 @@ export default function App() {
           <Route index element={<DashboardOverview />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="categories" element={<CategoriesPage />} />
+          <Route path="size-charts" element={<SizeChartsPage />} />
           <Route path="products" element={<Navigate to="../inventory" replace />} />
           <Route path="orders" element={<OrdersPage />} />
         </Route>
